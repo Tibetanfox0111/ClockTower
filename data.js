@@ -2,7 +2,7 @@
 let gameState = {
     currentTurn: 1,
     maxTurns: 24,
-    gold: 75,
+    gold: 90,
     trust: 50,
     complaint: 25, 
     military: 20, 
@@ -10,9 +10,30 @@ let gameState = {
     selectedPolicy: 'repair',
     taxConsumption: 10, 
     taxIncome: 25,      
-    taxResident: 10,    
+    taxResident: 10,
+    difficulty: 'normal',
     history: []
 };
+
+const difficultyRates = {
+    easy: 0.05,
+    normal: 0.10,
+    hard: 0.15
+};
+
+const difficultyLabels = {
+    easy: 'イージー：災害発生確率 5%',
+    normal: 'ノーマル：災害発生確率 10%',
+    hard: 'ハード：災害発生確率 15%'
+};
+
+const taxIncomeRates = {
+    consumption: 4,
+    income: 3,
+    resident: 4
+};
+
+const complaintPerTaxPoint = 2;
 
 const seasonalEvents = {
     omens: [
@@ -81,6 +102,8 @@ const cardDefense = document.getElementById('card-defense');
 const cardEducation = document.getElementById('card-education');
 const cardTrain = document.getElementById('card-train'); 
 const policyCards = document.querySelectorAll('.policy-card');
+const difficultyRadios = document.querySelectorAll('input[name="difficulty"]');
+const difficultyHint = document.getElementById('difficulty-hint');
 
 maxYearsRange.addEventListener('input', (e) => {
     const years = parseInt(e.target.value);
@@ -90,6 +113,14 @@ maxYearsRange.addEventListener('input', (e) => {
     } else {
         maxYearsVal.textContent = `${years}年 (${gameState.maxTurns}ターン)`;
     }
+});
+
+difficultyRadios.forEach(radio => {
+    radio.addEventListener('change', (e) => {
+        if (!e.target.checked) return;
+        gameState.difficulty = e.target.value;
+        difficultyHint.textContent = difficultyLabels[e.target.value];
+    });
 });
 
 startBtn.addEventListener('click', startGame);
@@ -180,9 +211,9 @@ function processTurn() {
     const diffIncome = gameState.taxIncome - 25;
     const diffResident = gameState.taxResident - 10;
 
-    const deltaConsumptionGold = diffConsumption * 3;
-    const deltaIncomeGold = diffIncome * 2;
-    const deltaResidentGold = diffResident * 3;
+    const deltaConsumptionGold = diffConsumption * taxIncomeRates.consumption;
+    const deltaIncomeGold = diffIncome * taxIncomeRates.income;
+    const deltaResidentGold = diffResident * taxIncomeRates.resident;
 
     const totalTaxChangeGold = deltaConsumptionGold + deltaIncomeGold + deltaResidentGold;
     gameState.gold += totalTaxChangeGold;
@@ -193,7 +224,7 @@ function processTurn() {
         logMessage += ` 税制調整により国庫金${totalTaxChangeGold}。`;
     }
 
-    const totalComplaintChange = (diffConsumption * 3) + (diffIncome * 3) + (diffResident * 3);
+    const totalComplaintChange = (diffConsumption * complaintPerTaxPoint) + (diffIncome * complaintPerTaxPoint) + (diffResident * complaintPerTaxPoint);
     gameState.complaint += totalComplaintChange;
 
     if (totalComplaintChange > 0) {
@@ -206,20 +237,20 @@ function processTurn() {
     else if (gameState.taxIncome < 15) { gameState.trust += 3; }
 
     if (gameState.selectedPolicy === 'repair') {
-        gameState.gold -= 15;
+        gameState.gold -= 12;
         gameState.towerHp = Math.min(100, gameState.towerHp + 20);
         logMessage += ` 政策「時計塔修復」により、塔HP+20。`;
     } else if (gameState.selectedPolicy === 'defense') {
-        gameState.gold -= 10;
+        gameState.gold -= 8;
         gameState.complaint = Math.max(0, gameState.complaint - 5);
         logMessage += ` 政策「防災備蓄」を行い、災害への備えを固めた。`;
     } else if (gameState.selectedPolicy === 'education') {
-        gameState.gold -= 12;
+        gameState.gold -= 10;
         gameState.trust += 10;
         gameState.complaint = Math.max(0, gameState.complaint - 10);
         logMessage += ` 政策「教育投資」により、人々の信頼+10。`;
     } else if (gameState.selectedPolicy === 'train') { 
-        gameState.gold -= 15;
+        gameState.gold -= 12;
         gameState.military += 10;
         logMessage += ` 政策「軍事訓練」を実施。軍事力+10。`;
     }
@@ -253,8 +284,8 @@ function processTurn() {
             return;
         }
     } else {
-        // 【確率変更】通常の災厄抽選確率を 0.25 から 0.10（10%）へ緩和
-        let disasterChance = 0.10;
+        // 難易度に応じた通常災厄の発生確率を設定
+        let disasterChance = difficultyRates[gameState.difficulty] || 0.10;
         if (isDefenseActive) disasterChance = 0.00; 
 
         if (Math.random() < disasterChance) {
@@ -451,10 +482,13 @@ function endGame(isSuccess, reason) {
 }
 
 function resetGame() {
+    maxYearsRange.value = 6;
+    maxYearsVal.textContent = "6年 (オススメ)";
+
     gameState = {
         currentTurn: 1,
-        maxTurns: parseInt(maxYearsRange.value) * 4,
-        gold: 75,
+        maxTurns: 6 * 4,
+        gold: 90,
         trust: 50,
         complaint: 25, 
         military: 20, 
@@ -463,10 +497,14 @@ function resetGame() {
         taxConsumption: 10,
         taxIncome: 25,
         taxResident: 10,
+        difficulty: 'normal',
         history: []
     };
-    maxYearsRange.value = 6;
-    maxYearsVal.textContent = "6年 (オススメ)";
+    
+    difficultyRadios.forEach(radio => {
+        radio.checked = radio.value === 'normal';
+    });
+    difficultyHint.textContent = difficultyLabels.normal;
     
     taxConsumptionRange.value = 10;
     taxConsumptionVal.textContent = "10%";
