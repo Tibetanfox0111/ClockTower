@@ -7,6 +7,7 @@ let gameState = {
     complaint: 25, 
     military: 20, 
     towerHp: 75,
+    pendingAuditResult: null,
     selectedPolicy: 'repair',
     taxConsumption: 10, 
     taxIncome: 25,      
@@ -27,28 +28,35 @@ const difficultyLabels = {
     hard: 'ハード：災害発生確率 15%'
 };
 
+const specialPolicyChance = 0.2;
+
 const taxIncomeRates = {
     consumption: 4,
-    income: 3,
-    resident: 4
+    income: 2,
+    resident: 2
 };
 
-const complaintPerTaxPoint = 2;
+// Tuning: reduce complaint sensitivity to prevent runaway increases
+const consumptionComplaintRate = 2;
+const incomeComplaintRate = 0.5;
+const incomeTrustRate = 2;
+const residentTrustRate = 1;
+const complaintPerTaxPoint = 1;
 
 const seasonalEvents = {
     omens: [
-        "「不穏な雲が、時計台の天辺に集まっている…台風の予兆か。」",
-        "「他国の偵察兵が国境付近で目撃されたとの噂がある。防衛を怠るな。」",
-        "「今期は星が綺麗に澄み渡っておる。大きな災害は起きぬだろう。」",
-        "「風が恐ろしく乾いている…ひとたび火の手が上がれば、大火となりかねんぞ。」",
-        "「大雨が降り続いておる。川の水位が不気味に上がってきたな…洪水に備えよ。」",
-        "「大地がかすかに震えている。この微小な地鳴り、大地震の前触れでなければよいが。」",
-        "「空が真っ黒な雲に覆われ、静電気が走っておる。大落雷が落ちるやもしれん。」",
-        "「（冬限定）今年の冬の風は一段と肌を刺す。この冷害は時計塔をも凍らせるか。」",
-        "「（冬限定）山に積もった雪が今にも崩れそうだ。雪崩の警戒を怠るな。」",
-        "「国庫が寂しくなれば、民の胃袋も寂しくなる。飢饉の足音が聞こえるようだ。」",
-        "「妙だな、すべての税率が奇妙な調和を見せている…世界がひっくり返るような天変地異が来ねばよいが…」",
-        "「街が奇妙なほど静まり返っている。嵐の前の静けさというやつか。」"
+        { text: "「不穏な雲が、時計台の天辺に集まっている…台風の予兆か。」", tag: 'typhoon' },
+        { text: "「他国の偵察兵が国境付近で目撃されたとの噂がある。防衛を怠るな。」", tag: 'invasion' },
+        { text: "「今期は星が綺麗に澄み渡っておる。大きな災害は起きぬだろう。」", tag: 'none' },
+        { text: "「風が恐ろしく乾いている…ひとたび火の手が上がれば、大火となりかねんぞ。」", tag: 'fire' },
+        { text: "「大雨が降り続いておる。川の水位が不気味に上がってきたな…洪水に備えよ。」", tag: 'flood' },
+        { text: "「大地がかすかに震えている。この微小な地鳴り、大地震の前触れでなければよいが。」", tag: 'earthquake' },
+        { text: "「空が真っ黒な雲に覆われ、静電気が走っておる。大落雷が落ちるやもしれん。」", tag: 'lightning' },
+        { text: "「今年の冬の風は一段と肌を刺す。この冷害は時計塔をも凍らせるか。」", tag: 'cold' },
+        { text: "「山に積もった雪が今にも崩れそうだ。雪崩の警戒を怠るな。」", tag: 'avalanche' },
+        { text: "「国庫が寂しくなれば、民の胃袋も寂しくなる。飢饉の足音が聞こえるようだ。」", tag: 'famine' },
+        { text: "「妙だな、すべての税率が奇妙な調和を見せている…世界がひっくり返るような天変地異が来ねばよいが…」", tag: 'cataclysm' },
+        { text: "「街が奇妙なほど静まり返っている。嵐の前の静けさというやつか。」", tag: 'none' }
     ],
     voices: [
         "「税金が高すぎると生活が立ち行かないよ。お上の慈悲を！」",
@@ -58,6 +66,8 @@ const seasonalEvents = {
     ]
 };
 
+let currentOmenTag = 'none';
+
 // HTML要素の取得
 const startScreen = document.getElementById('start-screen');
 const mainScreen = document.getElementById('main-screen');
@@ -66,12 +76,18 @@ const resultScreen = document.getElementById('result-screen');
 const maxYearsRange = document.getElementById('max-years-range');
 const maxYearsVal = document.getElementById('max-years-val');
 const startBtn = document.getElementById('start-btn');
+const fullscreenBtn = document.getElementById('fullscreen-btn');
 
 const turnBadge = document.getElementById('turn-badge');
 const statusGold = document.getElementById('status-gold');
 const statusTrust = document.getElementById('status-trust');
 const statusComplaint = document.getElementById('status-complaint');
 const statusMilitary = document.getElementById('status-military'); 
+const statusGoldDelta = document.getElementById('status-gold-delta');
+const statusTrustDelta = document.getElementById('status-trust-delta');
+const statusComplaintDelta = document.getElementById('status-complaint-delta');
+const statusMilitaryDelta = document.getElementById('status-military-delta');
+const statusAuditProb = document.getElementById('status-audit-prob');
 
 const towerImg = document.getElementById('tower-img');
 const towerHpFill = document.getElementById('tower-hp-fill');
@@ -79,6 +95,8 @@ const towerHpNum = document.getElementById('tower-hp-num');
 const flavorText = document.getElementById('flavor-text');
 
 const disasterText = document.getElementById('disaster-text');
+const auditResultBox = document.getElementById('audit-result-box');
+const auditResultText = document.getElementById('audit-result-text');
 const omenText = document.getElementById('omen-text');
 const voiceText = document.getElementById('voice-text');
 
@@ -100,10 +118,15 @@ const restartBtn = document.getElementById('restart-btn');
 const cardRepair = document.getElementById('card-repair');
 const cardDefense = document.getElementById('card-defense');
 const cardEducation = document.getElementById('card-education');
-const cardTrain = document.getElementById('card-train'); 
+const cardTrain = document.getElementById('card-train');
+const cardCaravan = document.getElementById('card-caravan');
+const cardTempTax = document.getElementById('card-temptax');
+const cardAudit = document.getElementById('card-audit');
 const policyCards = document.querySelectorAll('.policy-card');
 const difficultyRadios = document.querySelectorAll('input[name="difficulty"]');
 const difficultyHint = document.getElementById('difficulty-hint');
+const meterDot = document.getElementById('meter-dot');
+const meterLabel = document.getElementById('meter-label');
 
 maxYearsRange.addEventListener('input', (e) => {
     const years = parseInt(e.target.value);
@@ -124,8 +147,79 @@ difficultyRadios.forEach(radio => {
 });
 
 startBtn.addEventListener('click', startGame);
-nextTurnBtn.addEventListener('click', processTurn);
+nextTurnBtn.addEventListener('click', onNextTurnClick);
 restartBtn.addEventListener('click', resetGame);
+
+// Fullscreen toggle
+if (fullscreenBtn) {
+    fullscreenBtn.addEventListener('click', () => {
+        const el = document.documentElement;
+        if (!document.fullscreenElement) {
+            if (el.requestFullscreen) el.requestFullscreen();
+            else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen();
+            else if (el.msRequestFullscreen) el.msRequestFullscreen();
+        } else {
+            if (document.exitFullscreen) document.exitFullscreen();
+            else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
+            else if (document.msExitFullscreen) document.msExitFullscreen();
+        }
+    });
+
+    document.addEventListener('fullscreenchange', () => {
+        if (!fullscreenBtn) return;
+        fullscreenBtn.textContent = document.fullscreenElement ? '全画面解除' : '全画面表示';
+    });
+}
+
+function onNextTurnClick() {
+    // Play meter animation for one turn, then process the turn logic
+    playTurnAnimation().then(() => {
+        processTurn();
+    });
+}
+
+function playTurnAnimation() {
+    return new Promise((resolve) => {
+        if (!meterDot) return resolve();
+        // 最終ターン（これ以上進めない場合）はアニメーションを行わず即時解決
+        if (gameState.currentTurn >= gameState.maxTurns) {
+            return resolve();
+        }
+        const currentIndex = gameState.currentTurn - 1; // 0-based
+        const maxIndex = Math.max(1, gameState.maxTurns - 1);
+        const startPercent = Math.max(0, Math.min(100, (currentIndex / maxIndex) * 100));
+        const endPercent = Math.max(0, Math.min(100, ((currentIndex + 1) / maxIndex) * 100));
+
+        // Set start position without transition
+        meterDot.style.transition = 'none';
+        meterDot.style.left = `${startPercent}%`;
+
+        // Force layout then animate to end
+        requestAnimationFrame(() => {
+            // update label to next turn's year/season
+            const seasons = ['春', '夏', '秋', '冬'];
+            const nextSeason = seasons[(gameState.currentTurn) % 4];
+            const nextYear = Math.ceil((gameState.currentTurn + 1) / 4);
+            if (meterLabel) meterLabel.textContent = `${nextYear}年目 ${nextSeason}`;
+
+            // enable transition and move
+            meterDot.style.transition = 'left 900ms cubic-bezier(.22,.9,.35,1)';
+            meterDot.style.left = `${endPercent}%`;
+
+            const cleanup = () => {
+                meterDot.removeEventListener('transitionend', cleanup);
+                resolve();
+            };
+            meterDot.addEventListener('transitionend', cleanup);
+
+            // Fallback in case transitionend doesn't fire
+            setTimeout(() => {
+                try { meterDot.removeEventListener('transitionend', cleanup); } catch(e){}
+                resolve();
+            }, 1200);
+        });
+    });
+}
 
 policyCards.forEach(card => {
     card.addEventListener('click', () => {
@@ -133,25 +227,30 @@ policyCards.forEach(card => {
         policyCards.forEach(c => c.classList.remove('active'));
         card.classList.add('active');
         gameState.selectedPolicy = card.getAttribute('data-policy');
+        updateUI();
     });
 });
 
 taxConsumptionRange.addEventListener('input', (e) => {
     gameState.taxConsumption = parseInt(e.target.value);
     taxConsumptionVal.textContent = `${gameState.taxConsumption}%`;
+    updateUI();
 });
 taxIncomeRange.addEventListener('input', (e) => {
     gameState.taxIncome = parseInt(e.target.value);
     taxIncomeVal.textContent = `${gameState.taxIncome}%`;
+    updateUI();
 });
 taxResidentRange.addEventListener('input', (e) => {
     gameState.taxResident = parseInt(e.target.value);
     taxResidentVal.textContent = `${gameState.taxResident}%`;
+    updateUI();
 });
 
 function startGame() {
     startScreen.classList.add('hidden');
     mainScreen.classList.remove('hidden');
+    refreshSpecialPolicyAvailability();
     updateUI();
     generatePredictions();
 }
@@ -161,6 +260,13 @@ function updateUI() {
     statusTrust.textContent = gameState.trust;
     statusComplaint.textContent = gameState.complaint;
     statusMilitary.textContent = gameState.military; 
+
+    // show predicted next-turn deltas
+    const deltas = computePredictedDeltas();
+    setDeltaDisplay(statusGoldDelta, deltas.gold);
+    setDeltaDisplay(statusTrustDelta, deltas.trust);
+    setDeltaDisplay(statusComplaintDelta, deltas.complaint);
+    setDeltaDisplay(statusMilitaryDelta, deltas.military);
 
     const year = Math.ceil(gameState.currentTurn / 4);
     const seasons = ['春', '夏', '秋', '冬'];
@@ -193,16 +299,183 @@ function updateUI() {
     } else {
         cardRepair.classList.remove('disabled');
     }
+
+    // 更新：ターンメーター表示を更新
+    updateTurnMeterUI();
+
+    // 脱税確率の表示更新
+    if (statusAuditProb) {
+        const p = computeEvaderProbability();
+        statusAuditProb.textContent = `${Math.round(p * 100)}%`;
+    }
+    updateAuditResultDisplay();
+}
+
+function updateTurnMeterUI() {
+    if (!meterDot || !meterLabel) return;
+    const idx = gameState.currentTurn - 1;
+    const maxIdx = Math.max(1, gameState.maxTurns - 1);
+    const percent = (idx / maxIdx) * 100;
+    // place dot without transition
+    meterDot.style.transition = 'none';
+    meterDot.style.left = `${percent}%`;
+    const seasons = ['春', '夏', '秋', '冬'];
+    const season = seasons[(gameState.currentTurn - 1) % 4];
+    const year = Math.ceil(gameState.currentTurn / 4);
+    meterLabel.textContent = `${year}年目 ${season}`;
+    // re-enable smooth transition for future animations
+    requestAnimationFrame(() => {
+        meterDot.style.transition = 'left 900ms cubic-bezier(.22,.9,.35,1)';
+    });
+}
+
+function updateAuditResultDisplay() {
+    if (!auditResultBox || !auditResultText) return;
+    if (gameState.pendingAuditResult) {
+        auditResultText.textContent = gameState.pendingAuditResult;
+        auditResultBox.classList.remove('hidden');
+    } else {
+        auditResultBox.classList.add('hidden');
+        auditResultText.textContent = '';
+    }
+}
+
+function refreshSpecialPolicyAvailability() {
+    const showCaravan = Math.random() < specialPolicyChance;
+    const showTempTax = Math.random() < (1/7); // ~1/7 chance
+    const showAudit = Math.random() < 0.2; // 1/5 chance
+    if (cardCaravan) {
+        cardCaravan.classList.toggle('hidden', !showCaravan);
+    }
+    if (cardTempTax) {
+        cardTempTax.classList.toggle('hidden', !showTempTax);
+    }
+    if (cardAudit) {
+        cardAudit.classList.toggle('hidden', !showAudit);
+    }
+    if (!showCaravan && gameState.selectedPolicy === 'caravan') {
+        gameState.selectedPolicy = 'repair';
+        policyCards.forEach(c => c.classList.remove('active'));
+        cardRepair.classList.add('active');
+    }
+    if (!showTempTax && gameState.selectedPolicy === 'tempTax') {
+        gameState.selectedPolicy = 'repair';
+        policyCards.forEach(c => c.classList.remove('active'));
+        cardRepair.classList.add('active');
+    }
+    if (!showAudit && gameState.selectedPolicy === 'audit') {
+        gameState.selectedPolicy = 'repair';
+        policyCards.forEach(c => c.classList.remove('active'));
+        cardRepair.classList.add('active');
+    }
 }
 
 function generatePredictions() {
-    const randomOmen = seasonalEvents.omens[Math.floor(Math.random() * seasonalEvents.omens.length)];
+    const omenObj = seasonalEvents.omens[Math.floor(Math.random() * seasonalEvents.omens.length)];
     const randomVoice = seasonalEvents.voices[Math.floor(Math.random() * seasonalEvents.voices.length)];
-    omenText.textContent = randomOmen;
+    omenText.textContent = omenObj.text;
     voiceText.textContent = randomVoice;
+    currentOmenTag = omenObj.tag || 'none';
+}
+
+function computePredictedDeltas() {
+    const diffConsumption = gameState.taxConsumption - 10;
+    const diffIncome = gameState.taxIncome - 25;
+    const diffResident = gameState.taxResident - 10;
+
+    const consumptionGold = diffConsumption * taxIncomeRates.consumption;
+    const incomeGold = diffIncome * taxIncomeRates.income;
+    const residentGold = diffResident * taxIncomeRates.resident;
+    const totalTaxGold = consumptionGold + incomeGold + residentGold;
+
+    let policyCost = 0;
+    let policyTrust = 0;
+    let policyComplaint = 0;
+    let policyMilitary = 0;
+    if (gameState.selectedPolicy === 'repair') { policyCost = 12; }
+    else if (gameState.selectedPolicy === 'defense') { policyCost = 8; policyComplaint = -5; }
+    else if (gameState.selectedPolicy === 'education') { policyCost = 10; policyTrust = 10; policyComplaint = -10; }
+    else if (gameState.selectedPolicy === 'train') { policyCost = 12; policyMilitary = 10; }
+    else if (gameState.selectedPolicy === 'caravan') { policyCost = 20; policyComplaint = -20; }
+    else if (gameState.selectedPolicy === 'tempTax') { policyCost = -20; policyTrust = -15; policyComplaint = 10; }
+    else if (gameState.selectedPolicy === 'audit') {
+        // predicted values based on probability of finding evaders
+        const p = computeEvaderProbability();
+        // audit costs 10 gold upfront
+        policyCost = 10;
+        // expected gold +15 * p, expected trust change = -20 * (1-p), complaint = +15 * (1-p)
+        var auditExpectedGold = Math.round(15 * p);
+        var auditExpectedTrust = Math.round(-20 * (1 - p));
+        var auditExpectedComplaint = Math.round(15 * (1 - p));
+    }
+
+    const predictedGold = totalTaxGold - policyCost;
+
+    let predictedTrust = 0;
+    predictedTrust += diffIncome * -incomeTrustRate;
+    predictedTrust += diffResident * -residentTrustRate;
+    predictedTrust += (diffConsumption > 0 ? -1 : diffConsumption < 0 ? 1 : 0);
+    predictedTrust += policyTrust;
+    if (gameState.towerHp < 50) predictedTrust -= 5;
+
+    let predictedComplaint = Math.round(diffConsumption * consumptionComplaintRate
+        + diffIncome * incomeComplaintRate
+        + diffResident * complaintPerTaxPoint
+        + policyComplaint);
+    predictedComplaint = Math.max(-10, Math.min(10, predictedComplaint));
+
+    const predictedMilitary = policyMilitary;
+
+    // apply audit expected values if audit selected
+    let finalPredictedGold = Math.round(predictedGold);
+    let finalPredictedTrust = Math.round(predictedTrust);
+    let finalPredictedComplaint = Math.round(predictedComplaint);
+    if (gameState.selectedPolicy === 'audit') {
+        finalPredictedGold += (auditExpectedGold || 0);
+        finalPredictedTrust += (auditExpectedTrust || 0);
+        finalPredictedComplaint += (auditExpectedComplaint || 0);
+    }
+
+    return {
+        gold: finalPredictedGold,
+        trust: finalPredictedTrust,
+        complaint: finalPredictedComplaint,
+        military: Math.round(predictedMilitary)
+    };
+}
+
+function computeEvaderProbability() {
+    let p = 0.02;
+    p += Math.max(0, gameState.taxIncome - 20) * 0.015;
+    p += Math.max(0, gameState.taxResident - 10) * 0.01;
+    p += Math.max(0, gameState.taxConsumption - 12) * 0.005;
+    if (gameState.trust < 40) p += 0.06;
+    if (gameState.trust > 70) p -= 0.02;
+    p = Math.max(0.02, Math.min(0.8, p));
+    return p;
+}
+
+
+
+
+function setDeltaDisplay(el, value) {
+    if (!el) return;
+    if (value > 0) {
+        el.textContent = `+${value}`;
+        el.classList.remove('negative','zero'); el.classList.add('positive');
+    } else if (value < 0) {
+        el.textContent = `${value}`;
+        el.classList.remove('positive','zero'); el.classList.add('negative');
+    } else {
+        el.textContent = '±0';
+        el.classList.remove('positive','negative'); el.classList.add('zero');
+    }
 }
 
 function processTurn() {
+    if (gameState.pendingAuditResult) {
+        gameState.pendingAuditResult = null;
+    }
     let logMessage = `【第${gameState.currentTurn}期】`;
     const seasons = ['春', '夏', '秋', '冬'];
     const currentSeason = seasons[(gameState.currentTurn - 1) % 4];
@@ -211,30 +484,39 @@ function processTurn() {
     const diffIncome = gameState.taxIncome - 25;
     const diffResident = gameState.taxResident - 10;
 
-    const deltaConsumptionGold = diffConsumption * taxIncomeRates.consumption;
-    const deltaIncomeGold = diffIncome * taxIncomeRates.income;
-    const deltaResidentGold = diffResident * taxIncomeRates.resident;
+    const consumptionGold = diffConsumption * taxIncomeRates.consumption;
+    const incomeGold = diffIncome * taxIncomeRates.income;
+    const residentGold = diffResident * taxIncomeRates.resident;
+    const totalTaxGold = consumptionGold + incomeGold + residentGold;
+    gameState.gold += totalTaxGold;
+    logMessage += ` 税収により国庫金${totalTaxGold >= 0 ? '+' : ''}${totalTaxGold}。`;
 
-    const totalTaxChangeGold = deltaConsumptionGold + deltaIncomeGold + deltaResidentGold;
-    gameState.gold += totalTaxChangeGold;
-
-    if (totalTaxChangeGold >= 0) {
-        logMessage += ` 税制調整により国庫金+${totalTaxChangeGold}。`;
-    } else {
-        logMessage += ` 税制調整により国庫金${totalTaxChangeGold}。`;
-    }
-
-    const totalComplaintChange = (diffConsumption * complaintPerTaxPoint) + (diffIncome * complaintPerTaxPoint) + (diffResident * complaintPerTaxPoint);
+    let totalComplaintChange = Math.round(diffConsumption * consumptionComplaintRate
+        + diffIncome * incomeComplaintRate
+        + diffResident * complaintPerTaxPoint);
+    totalComplaintChange = Math.max(-10, Math.min(10, totalComplaintChange));
     gameState.complaint += totalComplaintChange;
-
     if (totalComplaintChange > 0) {
-        logMessage += ` 税率が基準を上回り、民の不満度+${totalComplaintChange}。`;
+        logMessage += ` 税率の変動により不満度+${totalComplaintChange}。`;
     } else if (totalComplaintChange < 0) {
-        logMessage += ` 減税政策が評価され、民の不満度${totalComplaintChange}。`;
+        logMessage += ` 税率の引き下げにより不満度${totalComplaintChange}。`;
     }
 
-    if (gameState.taxIncome > 35) { gameState.trust -= 4; }
-    else if (gameState.taxIncome < 15) { gameState.trust += 3; }
+    let trustChange = 0;
+    if (gameState.taxIncome > 25) {
+        trustChange -= Math.floor((gameState.taxIncome - 25) / 5) + 1;
+    } else if (gameState.taxIncome < 25) {
+        trustChange += Math.floor((25 - gameState.taxIncome) / 5) + 1;
+    }
+    gameState.trust += trustChange;
+    if (trustChange > 0) {
+        logMessage += ` 低い所得税が評価され、信頼度+${trustChange}。`;
+    } else if (trustChange < 0) {
+        logMessage += ` 高い所得税により信頼度${trustChange}。`;
+    }
+
+    gameState.towerHp -= 5;
+    logMessage += ` 時計塔の維持で塔HP-5。`;
 
     if (gameState.selectedPolicy === 'repair') {
         gameState.gold -= 12;
@@ -253,6 +535,30 @@ function processTurn() {
         gameState.gold -= 12;
         gameState.military += 10;
         logMessage += ` 政策「軍事訓練」を実施。軍事力+10。`;
+    } else if (gameState.selectedPolicy === 'tempTax') {
+        gameState.gold += 20;
+        gameState.trust = Math.max(0, gameState.trust - 15);
+        gameState.complaint = Math.min(100, gameState.complaint + 10);
+        logMessage += ` 政策「臨時税」により国庫金+20。信頼度-15。不満度+10。`;
+    } else if (gameState.selectedPolicy === 'audit') {
+        gameState.gold -= 10;
+        const p = computeEvaderProbability();
+        const auditChance = Math.round(p * 100);
+        const auditSuccess = Math.random() < p;
+        if (auditSuccess) {
+            gameState.gold += 15;
+            logMessage += ` 🔎脱税調査に10ゴールドを支払い、調査で不正が発見され国庫金+15。`;
+            gameState.pendingAuditResult = `🔎 脱税調査の結果: 不正が発見されました！国庫金+15。 (この期の脱税確率: ${auditChance}%)`;
+        } else {
+            gameState.trust = Math.max(0, gameState.trust - 20);
+            gameState.complaint = Math.min(100, gameState.complaint + 15);
+            logMessage += ` ❌脱税調査に10ゴールドを支払ったが不正は見つからず、冤罪騒ぎで信頼度-20・不満度+15。`;
+            gameState.pendingAuditResult = `🔍 脱税調査の結果: 脱税は見つかりませんでした。冤罪騒ぎにより信頼度-20・不満度+15。 (この期の脱税確率: ${auditChance}%)`;
+        }
+    } else if (gameState.selectedPolicy === 'caravan') {
+        gameState.gold -= 20;
+        gameState.complaint = Math.max(0, gameState.complaint - 20);
+        logMessage += ` 政策「キャラバン」による支援物資で、国庫金-20。不満度-20。`;
     }
 
     // 🏚️ 時計塔HP50未満でのペナルティ判定
@@ -269,52 +575,55 @@ function processTurn() {
     // 🌀 厄災発生判定ロジック
     const isDefenseActive = (gameState.selectedPolicy === 'defense');
 
-    // 天変地異の確率計算
-    const cataclysmChance = (gameState.taxConsumption / 100) * (gameState.taxIncome / 100) * (gameState.taxResident / 100);
-    
-    if (Math.random() < cataclysmChance) {
-        if (isDefenseActive) {
-            turnEventSummary += `✨【神の加護】天変地異の危機がこの国を襲いましたが、徹底された「防災備蓄」により完全に無効化されました！ `;
-            logMessage += ` ✨政策「防災備蓄」により天変地異を完全防御。`;
-        } else {
-            gameState.towerHp = 0;
-            logMessage += ` 🌎天変地異が発生！時計塔が消滅。`;
-            gameState.history.push(logMessage);
-            endGame(false, "天変地異（すべての税率が噛み合った最悪の確率により世界が崩壊。防災対策を怠っていたため、時計塔を含め国家の全てが灰燼に帰しました）");
-            return;
-        }
-    } else {
-        // 難易度に応じた通常災厄の発生確率を設定
-        let disasterChance = difficultyRates[gameState.difficulty] || 0.10;
-        if (isDefenseActive) disasterChance = 0.00; 
-
-        if (Math.random() < disasterChance) {
-            // 発生可能な災厄プール
-            let availableDisasters = [
-                { name: "台風", damage: 30, text: "⚠️災厄「猛烈な台風」が直撃し、時計塔が大きく損壊" },
-                { name: "大火", damage: 30, text: "⚠️災厄「謎の大火」が燃え広がり、時計塔が激しく炎上" },
-                { name: "洪水", damage: 15, text: "⚠️災厄「大規模な洪水」が発生し、インフラが激しく水没" },
-                { name: "地震", damage: 20, text: "⚠️災厄「大地震」の揺れにより、時計塔に亀裂が走る" },
-                { name: "落雷", damage: 15, text: "⚠️災厄「激しい落雷」が時計塔の頂点に直撃" }
-            ];
-
-            // 冬限定の災厄を追加
-            if (currentSeason === "冬") {
-                availableDisasters.push({ name: "冷害", damage: 20, text: "⚠️災厄「記録的な冷害」により街が凍りつく" });
-                availableDisasters.push({ name: "雪崩", damage: 25, text: "⚠️災厄「大雪崩」が防壁を越えて押し寄せる" });
+    // 災厄発生判定：預言者の発言に基づく
+    // currentOmenTag によって、その災害のみ発生の可能性がある。
+    if (isDefenseActive && currentOmenTag === 'cataclysm') {
+        turnEventSummary += `✨【神の加護】天変地異の危機がこの国を襲いましたが、徹底された「防災備蓄」により完全に無効化されました！ `;
+        logMessage += ` ✨政策「防災備蓄」により天変地異を完全防御。`;
+    } else if (currentOmenTag === 'cataclysm') {
+        // 天変地異は預言がある場合に 1/2 の確率で発生
+        if (Math.random() < 0.5) {
+            if (isDefenseActive) {
+                turnEventSummary += `✨【神の加護】天変地異の危機がこの国を襲いましたが、徹底された「防災備蓄」により完全に無効化されました！ `;
+                logMessage += ` ✨政策「防災備蓄」により天変地異を完全防御。`;
+            } else {
+                gameState.towerHp = 0;
+                logMessage += ` 🌎天変地異が発生！時計塔が消滅。`;
+                gameState.history.push(logMessage);
+                endGame(false, "天変地異（預言により突如出現した世界規模の大災害）。");
+                return;
             }
-
-            // 国庫金60未満限定の災厄を追加
-            if (gameState.gold < 60) {
-                availableDisasters.push({ name: "飢饉", damage: 15, text: "⚠️災厄「大飢饉」が発生し、国内の困窮に引きずられ補修が滞る" });
-            }
-
-            // プールの中からランダムで1つを発動
-            const chosenDisaster = availableDisasters[Math.floor(Math.random() * availableDisasters.length)];
-            gameState.towerHp -= chosenDisaster.damage;
-            turnEventSummary += `${chosenDisaster.text} (-HP${chosenDisaster.damage}) `;
-            logMessage += ` ⚠️災害発生（${chosenDisaster.name}）。塔にダメージ。`;
         }
+    } else if (currentOmenTag && currentOmenTag !== 'none') {
+        // 通常災害は預言がある場合のみ起きうる。まず該当災害が現行条件で有効か確認。
+        // 発生対象を定義（タグ付き）
+        let availableDisasters = [
+            { tag: 'typhoon', name: "台風", damage: 30, text: "⚠️災厄「猛烈な台風」が直撃し、時計塔が大きく損壊" },
+            { tag: 'fire', name: "大火", damage: 30, text: "⚠️災厄「謎の大火」が燃え広がり、時計塔が激しく炎上" },
+            { tag: 'flood', name: "洪水", damage: 15, text: "⚠️災厄「大規模な洪水」が発生し、インフラが激しく水没" },
+            { tag: 'earthquake', name: "地震", damage: 20, text: "⚠️災厄「大地震」の揺れにより、時計塔に亀裂が走る" },
+            { tag: 'lightning', name: "落雷", damage: 15, text: "⚠️災厄「激しい落雷」が時計塔の頂点に直撃" }
+        ];
+
+        if (currentSeason === "冬") {
+            availableDisasters.push({ tag: 'cold', name: "冷害", damage: 20, text: "⚠️災厄「記録的な冷害」により街が凍りつく" });
+            availableDisasters.push({ tag: 'avalanche', name: "雪崩", damage: 25, text: "⚠️災厄「大雪崩」が防壁を越えて押し寄せる" });
+        }
+        if (gameState.gold < 60) {
+            availableDisasters.push({ tag: 'famine', name: "飢饉", damage: 15, text: "⚠️災厄「大飢饉」が発生し、国内の困窮に引きずられ補修が滞る" });
+        }
+
+        // 予言タグに一致する災害があるか
+        const chosen = availableDisasters.find(d => d.tag === currentOmenTag);
+        if (chosen && !isDefenseActive) {
+            // 予言により 1/3 の確率で発生
+            if (Math.random() < (1/3)) {
+                gameState.towerHp -= chosen.damage;
+                turnEventSummary += `${chosen.text} (-HP${chosen.damage}) `;
+                logMessage += ` ⚠️災害発生（${chosen.name}）。塔にダメージ。`;
+            }
+        }
+        // 予言があるが条件を満たさない場合は発生しない
     }
 
     // 他国からの侵攻ロジック
@@ -334,10 +643,9 @@ function processTurn() {
         
         if (Math.random() < attackChance) {
             invasionOccurred = true;
-            const attackers = gameState.complaint; 
-            
-            const enemyPower = (attackers * 2) + 10;              
-            const governmentPower = gameState.military + gameState.trust; 
+            const attackers = gameState.complaint;
+            const enemyPower = (attackers * 2) + 10;
+            const governmentPower = gameState.military + Math.floor(gameState.trust / 2);
 
             const displayEnemySoldiers = (enemyPower * 1000).toLocaleString();
             const displayGovSoldiers = (governmentPower * 1000).toLocaleString();
@@ -353,7 +661,7 @@ function processTurn() {
             gameState.towerHp -= 10;
 
             if (governmentPower >= enemyPower) {
-                const militaryLoss = Math.min(gameState.military, Math.floor(attackers * 0.5));
+                const militaryLoss = Math.min(gameState.military, enemyPower);
                 gameState.military = Math.max(0, gameState.military - militaryLoss);
 
                 logMessage += ` ⚔️${enemyType}の侵攻を防衛成功（塔HP-10）。`;
@@ -400,8 +708,8 @@ function processTurn() {
 
     // 市民革命対決ロジック
     if (revolutionTriggered) {
-        const rebelPower = gameState.complaint * 2;                  
-        const governmentPower = gameState.military + gameState.trust; 
+        const rebelPower = gameState.complaint * 2;
+        const governmentPower = gameState.military + gameState.trust;
 
         const displayRebelSoldiers = (rebelPower * 1000).toLocaleString();
         const displayGovSoldiers = (governmentPower * 1000).toLocaleString();
@@ -410,10 +718,10 @@ function processTurn() {
         gameState.towerHp -= 10;
 
         if (governmentPower >= rebelPower) {
-            const militaryLoss = Math.min(gameState.military, Math.floor(rebelPower * 0.5));
+            const militaryLoss = Math.min(gameState.military, rebelPower);
             gameState.military = Math.max(0, gameState.military - militaryLoss);
             
-            gameState.complaint = 20; 
+            gameState.complaint = 20;
             gameState.trust = Math.max(0, Math.min(100, gameState.trust - 15));
 
             const suppressionMsg = `💥【市民革命勃発】${revolutionReason}<br>⚔️【武力制裁】政府軍 ${displayGovSoldiers} 人により、革命軍 ${displayRebelSoldiers} 人の鎮圧に成功。国内の混乱により時計塔HP -10。（軍事力-${militaryLoss}、不満度が20へ、信頼度-15）`;
@@ -454,6 +762,7 @@ function processTurn() {
     if (gameState.currentTurn > gameState.maxTurns) {
         endGame(true, "無事、任期を全うしました！敵国の侵攻や天災を退けた名君として歴史に刻まれるでしょう。");
     } else {
+        refreshSpecialPolicyAvailability();
         updateUI();
         generatePredictions();
     }
@@ -493,6 +802,7 @@ function resetGame() {
         complaint: 25, 
         military: 20, 
         towerHp: 75,
+        pendingAuditResult: null,
         selectedPolicy: 'repair',
         taxConsumption: 10,
         taxIncome: 25,
@@ -519,3 +829,5 @@ function resetGame() {
     resultScreen.classList.add('hidden');
     startScreen.classList.remove('hidden');
 }
+
+    

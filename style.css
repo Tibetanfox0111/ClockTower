@@ -120,6 +120,24 @@ h1 {
     box-shadow: 0 2px 5px rgba(0,0,0,0.2);
 }
 
+/* スタート画面のコントロール */
+.start-controls {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    align-items: center;
+    margin-top: 12px;
+}
+.classic-btn.secondary {
+    padding: 8px 18px;
+    font-size: 1.05rem;
+    background: linear-gradient(180deg, #e7d6b6, #a57a4e);
+    border: 2px solid #5c4328;
+    max-width: 180px;
+    white-space: nowrap;
+    box-sizing: border-box;
+}
+
 .setup-range-labels {
     position: relative;
     height: 40px;
@@ -205,6 +223,15 @@ h1 {
     margin-bottom: 8px;
 }
 
+/* 固定レイアウト：ラベル幅の変動でレイアウトが崩れるのを防ぐ */
+.game-header { flex-wrap: nowrap; }
+.turn-meter { flex-shrink: 0; }
+.meter-track { width: 360px; }
+.meter-label { width: 120px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* スタート画面のボタンが枠からはみ出る問題を防止 */
+#start-screen .classic-btn { max-width: 320px; display: block; margin: 12px auto 0; box-sizing: border-box; }
+
 .game-header h2 {
     margin: 0;
     color: #5c4328;
@@ -220,6 +247,41 @@ h1 {
     border: 2px solid #8c6239;
     font-weight: 900;
     font-size: 1.15rem;
+}
+
+/* ターン経過メーター */
+.turn-meter {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-left: 16px;
+}
+.meter-track {
+    width: 420px;
+    height: 8px;
+    background: linear-gradient(90deg,#e9dcc4,#f7efe0);
+    border: 2px solid #9c7246;
+    border-radius: 10px;
+    position: relative;
+    overflow: visible;
+}
+.meter-dot {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: #ffffff;
+    border: 3px solid #ba4318;
+    position: absolute;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    left: 0%;
+    transition: left 900ms cubic-bezier(.22,.9,.35,1);
+    box-shadow: 0 3px 8px rgba(0,0,0,0.18);
+}
+.meter-label {
+    font-size: 1rem;
+    color: #5c4328;
+    font-weight: 900;
 }
 
 .game-layout {
@@ -241,7 +303,7 @@ h1 {
 }
 
 .side-panel {
-    width: 350px;
+    width: 400px;
     gap: 6px;
 }
 
@@ -264,10 +326,10 @@ h1 {
 .status-item {
     display: flex;
     align-items: center;
-    gap: 15px;
+    gap: 18px;
     background: #f7f1e4;
-    padding: 8px 14px;
-    border-radius: 6px;
+    padding: 12px 16px;
+    border-radius: 8px;
     border: 1px solid #d3c4ad;
     border-left: 6px solid #8c6239;
 }
@@ -281,19 +343,37 @@ h1 {
 
 .status-info {
     display: flex;
-    flex-direction: column;
+    align-items: baseline;
+    gap: 10px;
 }
 
 .label {
     font-size: 0.9rem;
     color: #5c4d41;
+    min-width: 72px;
 }
 
 .value {
-    font-size: 1.5rem;
+    font-size: 1.6rem;
     font-weight: 900;
     color: #1a1008;
+    display: inline-block;
+    min-width: 56px;
+    text-align: right;
 }
+
+.pred-delta {
+    margin-left: 10px;
+    font-size: 1.6rem;
+    font-weight: 900;
+    min-width: 56px;
+    display: inline-block;
+    text-align: right;
+    color: #5c4328;
+}
+.pred-delta.positive { color: #2e8253; }
+.pred-delta.negative { color: #b52b2b; }
+.pred-delta.zero { color: #5c4328; }
 
 /* 縦型HPメーター */
 .tower-hp-vertical-container {
@@ -396,6 +476,7 @@ h1 {
 }
 
 .disaster-report-box { border-left: 8px solid #b52b2b !important; }
+.audit-result-box { border-left: 8px solid #1f4b99; min-height: 108px; background: #ebf4ff; }
 .omen-box { border-left: 8px solid #ba4318; }
 .voice-box { border-left: 8px solid #2e8253; }
 
