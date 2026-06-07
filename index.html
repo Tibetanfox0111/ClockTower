@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>時計塔領：まだ見ぬ国の歴史</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="game-container">
+        <div id="start-screen" class="screen">
+            <h1>時計塔領</h1>
+            <div class="subtitle">〜 まだ見ぬ国の歴史 〜</div>
+            <p class="intro-text">
+                時計台は、この国のすべてのインフラ（みんなの暮らしを支える仕組み）の象徴です。<br>
+                もし時計台が壊れてしまえば、国家は崩壊し、人々は暮らしていけなくなります。<br>
+                集めた税金を正しく使い、災害や不満から国を守りながら、選んだ期間の間、国家を維持しましょう！
+            </p>
+            <div class="setup-section">
+                <label class="setup-label" for="max-years-range">
+                    ゲームのプレイ期間設定: <span id="max-years-val">6年 (オススメ)</span>
+                </label>
+                
+                <div class="range-wrapper">
+                    <input type="range" id="max-years-range" min="1" max="20" value="6">
+                </div>
+                
+                <div class="setup-range-labels">
+                    <span class="label-short">1年 (短期)</span>
+                    <span class="label-recommend">6年 (オススメ)</span>
+                    <span class="label-long">20年 (長期)</span>
+                </div>
+            </div>
+            <div>
+                <button id="start-btn" class="classic-btn">統治を開始する</button>
+            </div>
+        </div>
+
+        <div id="main-screen" class="screen hidden">
+            <div class="game-header">
+                <h2>時計塔領：まだ見ぬ国の歴史</h2>
+                <div id="turn-badge" class="badge">1年目 春 / 全6年</div>
+            </div>
+
+            <div class="game-layout">
+                <div class="panel side-panel">
+                    <h3>状態スナップショット</h3>
+                    <div class="status-item">
+                        <span class="status-icon">💰</span>
+                        <div class="status-info">
+                            <span class="label">国庫金</span>
+                            <span id="status-gold" class="value">75</span>
+                        </div>
+                    </div>
+                    <div class="status-item">
+                        <span class="status-icon">🤝</span>
+                        <div class="status-info">
+                            <span class="label">信頼度</span>
+                            <span id="status-trust" class="value">50</span>
+                        </div>
+                    </div>
+                    <div class="status-item complaint-item">
+                        <span class="status-icon">🔥</span>
+                        <div class="status-info">
+                            <span class="label">不満度</span>
+                            <span id="status-complaint" class="value">25</span>
+                        </div>
+                    </div>
+                    <div class="status-item military-item">
+                        <span class="status-icon">⚔️</span>
+                        <div class="status-info">
+                            <span class="label">軍事力</span>
+                            <span id="status-military" class="value">20</span>
+                        </div>
+                    </div>
+
+                    <div class="tower-hp-vertical-container">
+                        <div class="hp-label-top">時計塔HP</div>
+                        <div class="gauge-bar-vertical">
+                            <div id="tower-hp-fill" class="gauge-fill-vertical" style="height: 75%;"></div>
+                        </div>
+                        <div id="tower-hp-num" class="hp-num-bottom">75/100</div>
+                    </div>
+                </div>
+
+                <div class="panel center-panel">
+                    <div class="tower-visual">
+                        <img id="tower-img" src="tower good.jpg" alt="時計塔の状態">
+                        <div id="flavor-text" class="flavor-text">時計塔は美しく、力強く鐘を鳴らしている。</div>
+                    </div>
+
+                    <div id="disaster-box" class="info-box disaster-report-box">
+                        <h4>【今期の災害・戦況報告】</h4>
+                        <p id="disaster-text">今期はまだ何も起きていません。</p>
+                    </div>
+                    <div class="info-box omen-box">
+                        <h4>【預言者の発言】</h4>
+                        <p id="omen-text">「台風がやってくるかもしれない」</p>
+                    </div>
+                    <div class="info-box voice-box">
+                        <h4>【民の声】</h4>
+                        <p id="voice-text">「税は安くないが、インフラが維持されているなら納得だ。」</p>
+                    </div>
+                </div>
+
+                <div class="panel side-panel">
+                    <h3>決定 & 影響力</h3>
+                    
+                    <div class="policy-section">
+                        <div class="tax-control-group">
+                            <span class="label">消費税: <span id="tax-consumption-val">10%</span></span>
+                            <input type="range" id="tax-consumption-range" min="0" max="20" step="1" value="10">
+                        </div>
+                        <div class="tax-control-group">
+                            <span class="label">所得税: <span id="tax-income-val">25%</span></span>
+                            <input type="range" id="tax-income-range" min="0" max="50" step="1" value="25">
+                        </div>
+                        <div class="tax-control-group">
+                            <span class="label">住民税: <span id="tax-resident-val">10%</span></span>
+                            <input type="range" id="tax-resident-range" min="0" max="20" step="1" value="10">
+                        </div>
+                    </div>
+
+                    <div class="budget-section">
+                        <span class="label">今期の最優先政策（1つ選択）</span>
+                        <div class="policy-cards">
+                            <div class="policy-card active" id="card-repair" data-policy="repair">
+                                <span class="card-icon">🛠</span>
+                                <div>
+                                    <div class="card-title">時計塔修復</div>
+                                    <div class="card-desc">国庫 -15 / 塔HP +20</div>
+                                </div>
+                            </div>
+                            <div class="policy-card" id="card-defense" data-policy="defense">
+                                <span class="card-icon">🛡</span>
+                                <div>
+                                    <div class="card-title">防災備蓄</div>
+                                    <div class="card-desc">国庫 -10 / 災害耐性UP / 不満 -5</div>
+                                </div>
+                            </div>
+                            <div class="policy-card" id="card-education" data-policy="education">
+                                <span class="card-icon">📖</span>
+                                <div>
+                                    <div class="card-title">教育投資</div>
+                                    <div class="card-desc">国庫 -12 / 信頼 +10 / 不満 -10</div>
+                                </div>
+                            </div>
+                            <div class="policy-card" id="card-train" data-policy="train">
+                                <span class="card-icon">🪖</span>
+                                <div>
+                                    <div class="card-title">軍事訓練</div>
+                                    <div class="card-desc">国庫 -15 / 軍事力 +10</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="action-section">
+                        <button id="next-turn-btn" class="classic-btn action-btn">次の季節へ ➔</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="result-screen" class="screen hidden">
+            <h2>政策シミュレーション 結果</h2>
+            <div id="result-badge" class="result-badge">ゲームクリア</div>
+            
+            <div class="result-layout">
+                <div class="evaluation-panel">
+                    <h3>統治の評価</h3>
+                    <p id="evaluation-text">あなたの治世は素晴らしいものでした。</p>
+                </div>
+                <div class="panel history-panel">
+                    <h3>国の歴史ログ</h3>
+                    <ul id="history-log"></ul>
+                </div>
+            </div>
+            <div>
+                <button id="restart-btn" class="classic-btn">もう一度挑戦する</button>
+            </div>
+        </div>
+    </div>
+    <script src="data.js"></script>
+</body>
+</html>

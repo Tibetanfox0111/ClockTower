@@ -1,0 +1,507 @@
+/* 全体デザイン：アンティーク・ベージュ基調・クラシック・ユニバーサル */
+body {
+    background-color: #dcd1be;
+    color: #2b2017;
+    font-family: 'Helvetica Neue', 'Arial', 'Hiragino Kaku Gothic ProN', 'Meiryo', sans-serif;
+    font-weight: bold;
+    margin: 0;
+    padding: 5px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    box-sizing: border-box;
+    overflow: hidden;
+}
+
+#game-container {
+    width: 1350px;
+    height: 96vh;
+    background: #f4ebd9 url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><rect fill="%23f4ebd9" width="100" height="100"/><path d="M0 0h100v100H0z" fill="none" stroke="%23ebdcb9" stroke-width="1"/></svg>');
+    border: 5px solid #8c6239;
+    border-radius: 8px;
+    box-shadow: 0 8px 20px rgba(90,70,50,0.25);
+    padding: 12px;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+}
+
+.screen {
+    transition: all 0.3s ease;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+.hidden {
+    display: none !important;
+}
+
+/* タイトル画面 */
+#start-screen {
+    text-align: center;
+    padding: 20px;
+    justify-content: center;
+}
+
+h1 {
+    font-size: 3.8rem;
+    color: #724c25;
+    margin-bottom: 0px;
+    font-weight: 900;
+}
+
+.subtitle {
+    font-size: 1.4rem;
+    color: #9c7246;
+    margin-top: 5px;
+    margin-bottom: 20px;
+}
+
+.intro-text {
+    max-width: 800px;
+    margin: 0 auto 20px auto;
+    line-height: 1.7;
+    font-size: 1.2rem;
+}
+
+/* 期間設定UI枠 */
+.setup-section {
+    width: 750px;
+    margin: 0 auto 25px auto;
+    background: rgba(255, 252, 245, 0.8);
+    padding: 20px 40px;
+    border: 2px solid #bfa380;
+    border-radius: 6px;
+    text-align: left;
+    box-sizing: border-box;
+}
+
+.setup-label {
+    font-size: 1.25rem;
+    color: #5c4328;
+    display: block;
+    margin-bottom: 15px;
+}
+
+#max-years-val {
+    color: #ba4318;
+    font-size: 1.35rem;
+    font-weight: 900;
+}
+
+.range-wrapper {
+    padding: 10px 0;
+    margin-bottom: 5px;
+}
+
+#max-years-range {
+    -webkit-appearance: none;
+    width: 100%;
+    background: #ebdcb9;
+    height: 18px;
+    border-radius: 9px;
+    border: 3px solid #8c6239;
+    margin: 0;
+    cursor: pointer;
+}
+
+#max-years-range::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    height: 30px;
+    width: 30px;
+    border-radius: 50%;
+    background: #724c25;
+    border: 3px solid #fff;
+    cursor: pointer;
+    margin-top: -8px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+}
+
+.setup-range-labels {
+    position: relative;
+    height: 40px;
+    margin-top: 12px;
+}
+
+.setup-range-labels span {
+    position: absolute;
+    font-size: 1rem;
+    color: #47382b;
+    white-space: nowrap;
+}
+
+.label-short { left: 0%; }
+.label-recommend {
+    left: 26.3%;
+    top: 6px;
+    transform: translateX(-50%);
+    background-color: #ebdcb9;
+    padding: 4px 10px;
+    border: 2px solid #9c7246;
+    border-radius: 4px;
+    font-weight: 900;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.08);
+}
+.label-long { right: 0%; }
+
+.classic-btn {
+    background: linear-gradient(180deg, #c7aa83, #826340);
+    border: 3px solid #5c4328;
+    color: #fff;
+    padding: 10px 40px;
+    font-size: 1.3rem;
+    font-weight: 900;
+    cursor: pointer;
+    border-radius: 6px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.15);
+}
+
+/* メインゲーム画面レイアウト */
+.game-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 3px dashed #8c6239;
+    padding-bottom: 6px;
+    margin-bottom: 8px;
+}
+
+.game-header h2 {
+    margin: 0;
+    color: #5c4328;
+    font-size: 1.5rem;
+    font-weight: 900;
+}
+
+.badge {
+    background-color: #ebdcb9;
+    color: #2b2017;
+    padding: 6px 16px;
+    border-radius: 20px;
+    border: 2px solid #8c6239;
+    font-weight: 900;
+    font-size: 1.15rem;
+}
+
+.game-layout {
+    display: flex;
+    gap: 12px;
+    flex: 1;
+    align-items: stretch;
+    overflow: hidden;
+}
+
+.panel {
+    background-color: rgba(255, 252, 245, 0.95);
+    border: 3px solid #9c7246;
+    border-radius: 8px;
+    padding: 10px;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+}
+
+.side-panel {
+    width: 350px;
+    gap: 6px;
+}
+
+.center-panel {
+    flex: 1;
+    gap: 8px;
+}
+
+.panel h3 {
+    margin: 0 0 8px 0;
+    font-size: 1.25rem;
+    font-weight: 900;
+    color: #5c4328;
+    text-align: center;
+    border-bottom: 2px solid #d3c4ad;
+    padding-bottom: 4px;
+}
+
+/* 左パネル: 状態スナップショット */
+.status-item {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    background: #f7f1e4;
+    padding: 8px 14px;
+    border-radius: 6px;
+    border: 1px solid #d3c4ad;
+    border-left: 6px solid #8c6239;
+}
+
+.complaint-item { border-left: 6px solid #b52b2b; }
+.military-item { border-left: 6px solid #3b5998; }
+
+.status-icon {
+    font-size: 1.8rem;
+}
+
+.status-info {
+    display: flex;
+    flex-direction: column;
+}
+
+.label {
+    font-size: 0.9rem;
+    color: #5c4d41;
+}
+
+.value {
+    font-size: 1.5rem;
+    font-weight: 900;
+    color: #1a1008;
+}
+
+/* 縦型HPメーター */
+.tower-hp-vertical-container {
+    margin-top: auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    padding: 5px 0;
+    width: 100%;
+}
+
+.hp-label-top {
+    font-size: 0.95rem;
+    font-weight: 900;
+    color: #5c4d41;
+}
+
+.gauge-bar-vertical {
+    width: 50px;
+    height: 120px; /* パネル要素増加に合わせ少しコンパクトに */
+    background-color: #e6dbcb;
+    border: 3px solid #8c6239;
+    border-radius: 6px;
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    box-shadow: inset 0 2px 5px rgba(0,0,0,0.1);
+}
+
+.gauge-fill-vertical {
+    width: 100%;
+    background: linear-gradient(360deg, #2e5982, #598cb8);
+    transition: height 0.4s ease;
+}
+
+.hp-num-bottom {
+    font-size: 1.1rem;
+    font-weight: 900;
+    color: #1a1008;
+}
+
+/* 中央パネル：時計塔ビジュアル */
+.tower-visual {
+    background-color: #ebdcb9;
+    border: 3px solid #8c6239;
+    border-radius: 6px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 8px;
+    box-sizing: border-box;
+    gap: 6px;
+}
+
+#tower-img {
+    height: 340px;
+    width: auto;
+    object-fit: contain;
+    margin: 0;
+    padding: 0;
+}
+
+.flavor-text {
+    font-size: 1.15rem;
+    color: #1a1008;
+    font-weight: 900;
+    text-align: center;
+    margin-top: 2px;
+}
+
+/* 各種報告ボックス */
+.info-box {
+    background: #f7f1e4;
+    border: 2px solid #c4b5a0;
+    border-radius: 6px;
+    padding: 8px 14px;
+    box-sizing: border-box;
+    min-height: 72px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.info-box h4 {
+    margin: 0 0 2px 0;
+    font-size: 0.95rem;
+    color: #5c4d41;
+}
+
+.info-box p {
+    margin: 0;
+    font-size: 1.1rem;
+    color: #1a1008;
+    line-height: 1.4;
+}
+
+.disaster-report-box { border-left: 8px solid #b52b2b !important; }
+.omen-box { border-left: 8px solid #ba4318; }
+.voice-box { border-left: 8px solid #2e8253; }
+
+/* 右パネル: 決定＆影響力 */
+.policy-section {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.tax-control-group {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+}
+
+.policy-section input[type=range] {
+    -webkit-appearance: none;
+    width: 100%;
+    background: #ebdcb9;
+    height: 8px;
+    border-radius: 6px;
+    border: 2px solid #8c6239;
+    margin: 2px 0;
+}
+
+.policy-section input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    height: 18px;
+    width: 18px;
+    border-radius: 50%;
+    background: #724c25;
+    border: 2px solid #fff;
+    cursor: pointer;
+}
+
+.policy-cards {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    flex: 1;
+}
+
+.policy-card {
+    background: #f7f1e4;
+    border: 2px solid #c4b5a0;
+    border-radius: 6px;
+    padding: 6px 12px;
+    text-align: left;
+    cursor: pointer;
+    color: #1a1008;
+    display: grid;
+    grid-template-columns: 35px 1fr;
+    align-items: center;
+    min-height: 52px;
+}
+
+.policy-card.active {
+    border-color: #724c25;
+    background: #ebdcb9;
+}
+
+.policy-card.disabled {
+    opacity: 0.4 !important;
+    background-color: #ccc !important;
+    border-color: #999 !important;
+    cursor: not-allowed !important;
+    pointer-events: none;
+}
+
+.card-icon {
+    font-size: 1.6rem;
+    grid-row: span 2;
+}
+
+.card-title {
+    font-size: 1.05rem;
+    color: #4f3316;
+}
+
+.card-desc {
+    font-size: 0.85rem;
+    color: #47382b;
+}
+
+.action-section {
+    padding-top: 4px;
+}
+
+.action-btn {
+    width: 100%;
+    padding: 10px;
+    font-size: 1.2rem;
+    font-weight: 900;
+    border-radius: 8px;
+}
+
+/* 結果画面 */
+#result-screen {
+    text-align: center;
+    padding: 10px;
+}
+
+.result-badge {
+    display: inline-block;
+    font-size: 1.6rem;
+    color: #fff;
+    background: #724c25;
+    padding: 8px 40px;
+    border-radius: 6px;
+    border: 3px solid #5c4328;
+    margin-bottom: 12px;
+}
+
+.result-layout {
+    display: flex;
+    gap: 20px;
+    margin-bottom: 12px;
+    text-align: left;
+    flex: 1;
+}
+
+.evaluation-panel {
+    flex: 1;
+    font-size: 1.2rem;
+    line-height: 1.6;
+}
+
+.history-panel {
+    width: 450px;
+    max-height: 320px;
+    overflow-y: auto;
+}
+
+#history-log {
+    padding-left: 20px;
+    margin: 0;
+    font-size: 1rem;
+    line-height: 1.6;
+    color: #2b2017;
+}
+
+#history-log li {
+    margin-bottom: 6px;
+}
