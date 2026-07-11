@@ -1,14 +1,14 @@
 // config.js - ゲームの設定やテキストデータ
 const difficultyRates = {
-    easy: 0.05,
-    normal: 0.10,
-    hard: 0.15
+    easy: 0.08,
+    normal: 0.15,
+    hard: 0.25
 };
 
 const difficultyLabels = {
-    easy: 'イージー：災害発生確率 5%',
-    normal: 'ノーマル：災害発生確率 10%',
-    hard: 'ハード：災害発生確率 15%'
+    easy: 'イージー：災害は少なめ・被害も軽め',
+    normal: 'ノーマル：標準的な難易度',
+    hard: 'ハード：災害が多め・被害も大きめ'
 };
 
 const specialPolicyChance = 0.2;

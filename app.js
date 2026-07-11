@@ -31,7 +31,6 @@ const statusGoldDelta = document.getElementById('status-gold-delta');
 const statusTrustDelta = document.getElementById('status-trust-delta');
 const statusComplaintDelta = document.getElementById('status-complaint-delta');
 const statusMilitaryDelta = document.getElementById('status-military-delta');
-const statusAuditProb = document.getElementById('status-audit-prob');
 
 // 時計塔・テキスト関連
 const towerImg = document.getElementById('tower-img');
@@ -39,8 +38,6 @@ const towerHpFill = document.getElementById('tower-hp-fill');
 const towerHpNum = document.getElementById('tower-hp-num');
 const flavorText = document.getElementById('flavor-text');
 const disasterText = document.getElementById('disaster-text');
-const auditResultBox = document.getElementById('audit-result-box');
-const auditResultText = document.getElementById('audit-result-text');
 const omenText = document.getElementById('omen-text');
 const voiceText = document.getElementById('voice-text');
 
@@ -61,6 +58,12 @@ const restartBtn = document.getElementById('restart-btn');
 const policyCards = document.querySelectorAll('.policy-card');
 const difficultyRadios = document.querySelectorAll('input[name=\"difficulty\"]');
 const difficultyHint = document.getElementById('difficulty-hint');
+const optionsBtn = document.getElementById('options-btn');
+const optionsPanel = document.getElementById('options-panel');
+const optionBgm = document.getElementById('option-bgm');
+const optionSfx = document.getElementById('option-sfx');
+const optionDifficulty = document.getElementById('option-difficulty');
+const optionQuitBtn = document.getElementById('option-quit-btn');
 const meterDot = document.getElementById('meter-dot');
 const meterLabel = document.getElementById('meter-label');
 
@@ -76,19 +79,82 @@ maxYearsRange.addEventListener('input', (e) => {
     if (am) am.playClick(); // 🔊 クリック音！
 });
 
+function updateDifficultySelection(value) {
+    const nextDifficulty = value || 'normal';
+    gameState.difficulty = nextDifficulty;
+    difficultyRadios.forEach(radio => {
+        radio.checked = radio.value === nextDifficulty;
+    });
+    if (optionDifficulty) optionDifficulty.value = nextDifficulty;
+    if (typeof difficultyLabels !== 'undefined' && difficultyHint) {
+        difficultyHint.textContent = difficultyLabels[nextDifficulty];
+    }
+}
+
+function setOptionsPanelVisible(visible) {
+    if (!optionsPanel) return;
+    optionsPanel.classList.toggle('hidden', !visible);
+}
+
 // 難易度ラジオボタン（切り替えた時にクリック音）
 difficultyRadios.forEach(radio => {
     radio.addEventListener('change', (e) => {
         if (!e.target.checked) return;
-        gameState.difficulty = e.target.value;
-        if (typeof difficultyLabels !== 'undefined') {
-            difficultyHint.textContent = difficultyLabels[e.target.value];
-        }
+        updateDifficultySelection(e.target.value);
         
         const am = getAudioManager();
         if (am) am.playClick(); // 🔊 クリック音！
     });
 });
+
+if (optionsBtn) {
+    optionsBtn.addEventListener('click', () => {
+        const am = getAudioManager();
+        if (am) am.playClick();
+        setOptionsPanelVisible(optionsPanel && optionsPanel.classList.contains('hidden'));
+    });
+}
+
+if (optionBgm) {
+    optionBgm.addEventListener('change', (e) => {
+        const am = getAudioManager();
+        if (am) {
+            am.setBgmEnabled(e.target.checked);
+            if (e.target.checked && !mainScreen.classList.contains('hidden')) {
+                am.startBGM();
+            }
+        }
+    });
+}
+
+if (optionSfx) {
+    optionSfx.addEventListener('change', (e) => {
+        const am = getAudioManager();
+        if (am) am.setSfxEnabled(e.target.checked);
+    });
+}
+
+if (optionDifficulty) {
+    optionDifficulty.addEventListener('change', (e) => {
+        updateDifficultySelection(e.target.value);
+        const am = getAudioManager();
+        if (am) am.playClick();
+    });
+}
+
+if (optionQuitBtn) {
+    optionQuitBtn.addEventListener('click', () => {
+        const am = getAudioManager();
+        if (am) {
+            am.playClick();
+            am.stopBGM();
+        }
+        resetGame();
+        setOptionsPanelVisible(false);
+    });
+}
+
+updateDifficultySelection(gameState.difficulty);
 
 // 開始ボタン（ゲーム開始と同時にBGMをスタート！）
 startBtn.addEventListener('click', () => {
@@ -161,6 +227,8 @@ taxResidentRange.addEventListener('input', (e) => {
 function startGame() {
     startScreen.classList.add('hidden');
     mainScreen.classList.remove('hidden');
+    resultScreen.classList.add('hidden');
+    setOptionsPanelVisible(false);
     refreshSpecialPolicyAvailability();
     updateUI();
     generatePredictions();
@@ -218,11 +286,6 @@ function updateUI() {
     }
 
     updateTurnMeterUI();
-    
-    if (statusAuditProb && typeof computeEvaderProbability === 'function') {
-        statusAuditProb.textContent = `${Math.round(computeEvaderProbability() * 100)}%`;
-    }
-    updateAuditResultDisplay();
 }
 
 function setDeltaDisplay(el, value) {
@@ -269,22 +332,14 @@ function playTurnAnimation() {
     });
 }
 
-function updateAuditResultDisplay() {
-    if (!auditResultBox || !auditResultText) return;
-    auditResultBox.classList.toggle('hidden', !gameState.pendingAuditResult);
-    auditResultText.textContent = gameState.pendingAuditResult || '';
-}
-
 function refreshSpecialPolicyAvailability() {
     const cardCaravan = document.getElementById('card-caravan');
     const cardTempTax = document.getElementById('card-temptax');
-    const cardAudit = document.getElementById('card-audit');
 
     const chanceCaravan = typeof specialPolicyChance !== 'undefined' ? specialPolicyChance : 0.2;
 
     if (cardCaravan) cardCaravan.classList.toggle('hidden', Math.random() >= chanceCaravan);
     if (cardTempTax) cardTempTax.classList.toggle('hidden', Math.random() >= (1/7));
-    if (cardAudit) cardAudit.classList.toggle('hidden', Math.random() >= 0.2);
 
     const currentActiveCard = document.querySelector('.policy-card.active');
     if (currentActiveCard && currentActiveCard.classList.contains('hidden')) {
@@ -333,13 +388,38 @@ window.onTurnProcessed = function(combinedDisasterText, logMessage) {
     
     // 任期満了（ゲームクリア）判定
     if (gameState.currentTurn > gameState.maxTurns) {
-        endGame(true, "無事、任期を全うし国の平穏を守り抜きました！");
+        endGame(true);
     } else {
         refreshSpecialPolicyAvailability();
         updateUI();
         generatePredictions();
     }
 };
+
+function getVictoryEnding() {
+    if (gameState.towerHp >= 80) {
+        return {
+            title: '🏆 保護勝利！ 時計塔を守り抜いた',
+            message: '🌟 時計塔は揺るがず、国の未来を守り抜きました。民は新たな時代を信じています。'
+        };
+    }
+    if (gameState.gold >= 110) {
+        return {
+            title: '🏆 財政勝利！ 国庫を豊かにした',
+            message: '🌟 国庫は潤い、次の時代に備える余裕が生まれました。'
+        };
+    }
+    if (gameState.trust >= 80) {
+        return {
+            title: '🏆 信頼勝利！ 民の信頼を勝ち取った',
+            message: '🌟 国民の信頼を失わず、名君として語り継がれる統治を成し遂げました。'
+        };
+    }
+    return {
+        title: '🏆 通常勝利！ 任期を全うした',
+        message: '🌟 さまざまな試練を乗り越え、平穏な任期を終えることができました。'
+    };
+}
 
 /**
  * ゲーム終了（ここでクリア音 / ゲームオーバー音を鳴らし分けるばい！）
@@ -359,9 +439,10 @@ function endGame(isSuccess, reason) {
     }
     
     if (isSuccess) {
-        resultBadge.textContent = "🏆 統治成功！ 任期満了";
+        const victory = getVictoryEnding();
+        resultBadge.textContent = victory.title;
         resultBadge.style.background = "#2e8253";
-        evaluationText.innerHTML = `🌟 素晴らしい手腕です！まだ見ぬ国の歴史に名君として刻まれました。<br>勝因: ${reason}`;
+        evaluationText.innerHTML = `${victory.message}<br>勝因: ${reason || '任期を無事に全うしました。'} `;
     } else {
         resultBadge.textContent = "💀 統治失敗！ ゲームオーバー";
         resultBadge.style.background = "#b52b2b";
@@ -388,7 +469,6 @@ function resetGame() {
         complaint: 25, 
         military: 20, 
         towerHp: 75,
-        pendingAuditResult: null,
         selectedPolicy: 'repair',
         taxConsumption: 10,
         taxIncome: 25,
@@ -397,12 +477,11 @@ function resetGame() {
         history: []
     };
     
-    difficultyRadios.forEach(radio => {
-        radio.checked = radio.value === 'normal';
-    });
-    if (typeof difficultyLabels !== 'undefined') {
-        difficultyHint.textContent = difficultyLabels.normal;
-    }
+    updateDifficultySelection('normal');
+
+    if (optionBgm) optionBgm.checked = true;
+    if (optionSfx) optionSfx.checked = true;
+    if (optionDifficulty) optionDifficulty.value = 'normal';
     
     taxConsumptionRange.value = 10;
     taxConsumptionVal.textContent = "10%";
@@ -416,5 +495,6 @@ function resetGame() {
     if (cardRepair) cardRepair.classList.add('active');
 
     resultScreen.classList.add('hidden');
+    mainScreen.classList.add('hidden');
     startScreen.classList.remove('hidden');
 }

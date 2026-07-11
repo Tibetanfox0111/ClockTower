@@ -49,12 +49,32 @@
         <div id="main-screen" class="screen hidden">
             <div class="game-header">
                 <h2>時計塔領：まだ見ぬ国の歴史</h2>
-                <div id="turn-badge" class="badge">1年目 春 / 全6年</div>
+                <div class="header-controls">
+                    <button id="options-btn" class="classic-btn secondary small-btn">⚙️ オプション</button>
+                    <div id="turn-badge" class="badge">1年目 春 / 全6年</div>
+                </div>
                 <div id="turn-meter" class="turn-meter">
                     <div class="meter-track">
                         <div id="meter-dot" class="meter-dot" aria-hidden="true"></div>
                     </div>
                     <div id="meter-label" class="meter-label">1年目 春</div>
+                </div>
+            </div>
+
+            <div id="options-panel" class="options-panel hidden">
+                <div class="options-card">
+                    <h3>オプション</h3>
+                    <label class="option-row"><input type="checkbox" id="option-bgm" checked> BGMを有効にする</label>
+                    <label class="option-row"><input type="checkbox" id="option-sfx" checked> 効果音を有効にする</label>
+                    <div class="option-row">
+                        <span>難易度</span>
+                        <select id="option-difficulty">
+                            <option value="easy">イージー</option>
+                            <option value="normal" selected>ノーマル</option>
+                            <option value="hard">ハード</option>
+                        </select>
+                    </div>
+                    <button id="option-quit-btn" class="classic-btn secondary small-btn">辞退する</button>
                 </div>
             </div>
 
@@ -94,14 +114,6 @@
                         </div>
                     </div>
 
-                    <div class="status-item">
-                        <span class="status-icon">🕵️</span>
-                        <div class="status-info">
-                            <span class="label">脱税確率</span>
-                            <span id="status-audit-prob" class="value">0%</span>
-                        </div>
-                    </div>
-
                     <div class="tower-hp-vertical-container">
                         <div class="hp-label-top">時計塔HP</div>
                         <div class="gauge-bar-vertical">
@@ -120,10 +132,6 @@
                     <div id="disaster-box" class="info-box disaster-report-box">
                         <h4>【今期の災害・戦況報告】</h4>
                         <p id="disaster-text">今期はまだ何も起きていません。</p>
-                    </div>
-                    <div id="audit-result-box" class="info-box audit-result-box hidden">
-                        <h4>【脱税調査結果】</h4>
-                        <p id="audit-result-text">直近の脱税調査結果は次のターンに表示されます。</p>
                     </div>
                     <div class="info-box omen-box">
                         <h4>【預言者の発言】</h4>
@@ -198,13 +206,7 @@
                                     <div class="card-desc">国庫 +20 / 不満度 ±0 / 信頼度 -15</div>
                                 </div>
                             </div>
-                            <div class="policy-card hidden" id="card-audit" data-policy="audit">
-                                <span class="card-icon">🔎</span>
-                                <div>
-                                    <div class="card-title">脱税調査</div>
-                                    <div class="card-desc">脱税者発見→国庫+15 / 発見なし→信頼-20 不満+15</div>
-                                </div>
-                            </div>
+
                         </div>
                     </div>
 
@@ -241,7 +243,5 @@
     <script src="audio.js"></script>
     <script src="gameLogic.js"></script>
     <script src="app.js"></script>
-</body>
-</html>
 </body>
 </html>
