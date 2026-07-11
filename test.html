@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>時計塔領 - オーディオ再生テスト（修正版）</title>
+    <style>
+        body {
+            background-color: #dcd1be;
+            color: #2b2017;
+            font-family: 'Helvetica Neue', 'Arial', 'Hiragino Kaku Gothic ProN', 'Meiryo', sans-serif;
+            font-weight: bold;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        .test-container {
+            width: 100%;
+            max-width: 600px;
+            background: #f4ebd9;
+            border: 4px solid #8c6239;
+            border-radius: 8px;
+            padding: 30px;
+            box-shadow: 0 8px 20px rgba(90,70,50,0.25);
+            text-align: center;
+        }
+        h1 {
+            color: #4f3316;
+            margin-top: 0;
+            border-bottom: 2px solid #8c6239;
+            padding-bottom: 10px;
+            font-size: 1.8rem;
+        }
+        p {
+            font-size: 0.95rem;
+            line-height: 1.6;
+            margin-bottom: 25px;
+            font-weight: normal;
+        }
+        .btn-group {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+        button {
+            background-color: #8c6239;
+            color: #f4ebd9;
+            border: 2px solid #4f3316;
+            padding: 14px 20px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background 0.2s, transform 0.1s;
+        }
+        button:hover {
+            background-color: #724c25;
+        }
+        button:active {
+            transform: scale(0.98);
+        }
+        .bgm-stop-btn {
+            background-color: #b52b2b;
+        }
+        .bgm-stop-btn:hover {
+            background-color: #912222;
+        }
+        .status-badge {
+            display: inline-block;
+            margin-top: 15px;
+            padding: 8px 16px;
+            background-color: #ebdcb9;
+            border: 2px solid #c2b291;
+            border-radius: 4px;
+            font-size: 0.95rem;
+            color: #433;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="test-container">
+        <h1>🎵 audio.js 再生テスト（修正版）</h1>
+        <p>
+            効果音の関数名ば <code>audio.js</code> の内部定義に完全に合わせ直したばい！<br>
+            同じフォルダに <code>audio.js</code> ば置いた状態でボタンを押してん！
+        </p>
+
+        <div class="btn-group">
+            <button id="start-bgm-btn">▶️ BGM（哀愁のシーケンサー）を開始</button>
+            <button id="stop-bgm-btn" class="bgm-stop-btn">⏹️ BGMを停止</button>
+        </div>
+
+        <hr style="border: 0; border-top: 2px solid #c2b291; margin: 20px 0;">
+
+        <h3 style="color: #4f3316; margin-bottom: 15px;">🔊 効果音（SE）テスト</h3>
+        <div class="btn-group" style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+            <button id="se-click-btn">🖱️ クリック音</button>
+            <button id="se-disaster-btn">⚠️ 災害発生音</button>
+            <button id="se-success-btn">🏆 統治成功音</button>
+            <button id="se-gameover-btn">💀 滅亡音</button>
+        </div>
+
+        <div id="status-message" class="status-badge">ステータス: 待機中</div>
+    </div>
+
+    <script src="audio.js"></script>
+
+    <script>
+        let audioManager = null;
+        const statusMessage = document.getElementById('status-message');
+
+        // オーディオマネージャーを安全に初期化
+        function getAudioManager() {
+            if (!audioManager) {
+                if (typeof GameAudioManager !== 'undefined') {
+                    audioManager = new GameAudioManager();
+                    statusMessage.textContent = "ステータス: システム初期化完了";
+                } else {
+                    statusMessage.textContent = "エラー: audio.js が見つかりません";
+                    alert("同じフォルダに audio.js があるか確認してくださいたい！");
+                }
+            }
+            return audioManager;
+        }
+
+        // --- BGM制御 ---
+        document.getElementById('start-bgm-btn').addEventListener('click', () => {
+            const manager = getAudioManager();
+            if (manager) {
+                manager.startBGM();
+                statusMessage.textContent = "ステータス: BGM 再生中... 🎶";
+            }
+        });
+
+        document.getElementById('stop-bgm-btn').addEventListener('click', () => {
+            const manager = getAudioManager();
+            if (manager) {
+                manager.stopBGM();
+                statusMessage.textContent = "ステータス: BGM 停止";
+            }
+        });
+
+        // --- 効果音制御（audio.jsの本当の関数名に修正！） ---
+        document.getElementById('se-click-btn').addEventListener('click', () => {
+            const manager = getAudioManager();
+            if (manager) {
+                if (typeof manager.playClick === 'function') {
+                    manager.playClick();
+                    statusMessage.textContent = "ステータス: クリック音（playClick）";
+                } else {
+                    statusMessage.textContent = "エラー: playClick 関数がなかばい";
+                }
+            }
+        });
+
+        document.getElementById('se-disaster-btn').addEventListener('click', () => {
+            const manager = getAudioManager();
+            if (manager) {
+                if (typeof manager.playDisaster === 'function') {
+                    manager.playDisaster();
+                    statusMessage.textContent = "ステータス: 災害音（playDisaster）";
+                } else {
+                    statusMessage.textContent = "エラー: playDisaster 関数がなかばい";
+                }
+            }
+        });
+
+        document.getElementById('se-success-btn').addEventListener('click', () => {
+            const manager = getAudioManager();
+            if (manager) {
+                if (typeof manager.playSuccess === 'function') {
+                    manager.playSuccess();
+                    statusMessage.textContent = "ステータス: 成功音（playSuccess）";
+                } else {
+                    statusMessage.textContent = "エラー: playSuccess 関数がなかばい";
+                }
+            }
+        });
+
+        document.getElementById('se-gameover-btn').addEventListener('click', () => {
+            const manager = getAudioManager();
+            if (manager) {
+                if (typeof manager.playGameOver === 'function') {
+                    manager.playGameOver();
+                    statusMessage.textContent = "ステータス: 滅亡音（playGameOver）";
+                } else {
+                    statusMessage.textContent = "エラー: playGameOver 関数がなかばい";
+                }
+            }
+        });
+    </script>
+</body>
+</html>

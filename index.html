@@ -31,7 +31,17 @@
                     <span class="label-long">20年 (長期)</span>
                 </div>
             </div>
-            <div>
+            <div class="difficulty-section">
+                <span class="setup-label">難易度を選択:</span>
+                <div class="difficulty-options">
+                    <label><input type="radio" name="difficulty" value="easy"> イージー</label>
+                    <label><input type="radio" name="difficulty" value="normal" checked> ノーマル</label>
+                    <label><input type="radio" name="difficulty" value="hard"> ハード</label>
+                </div>
+                <div id="difficulty-hint" class="difficulty-hint">ノーマル：災害発生確率 10%</div>
+            </div>
+            <div class="start-controls">
+                <button id="fullscreen-btn" class="classic-btn secondary">全画面表示</button>
                 <button id="start-btn" class="classic-btn">統治を開始する</button>
             </div>
         </div>
@@ -40,6 +50,12 @@
             <div class="game-header">
                 <h2>時計塔領：まだ見ぬ国の歴史</h2>
                 <div id="turn-badge" class="badge">1年目 春 / 全6年</div>
+                <div id="turn-meter" class="turn-meter">
+                    <div class="meter-track">
+                        <div id="meter-dot" class="meter-dot" aria-hidden="true"></div>
+                    </div>
+                    <div id="meter-label" class="meter-label">1年目 春</div>
+                </div>
             </div>
 
             <div class="game-layout">
@@ -50,6 +66,7 @@
                         <div class="status-info">
                             <span class="label">国庫金</span>
                             <span id="status-gold" class="value">75</span>
+                            <span id="status-gold-delta" class="pred-delta">±0</span>
                         </div>
                     </div>
                     <div class="status-item">
@@ -57,6 +74,7 @@
                         <div class="status-info">
                             <span class="label">信頼度</span>
                             <span id="status-trust" class="value">50</span>
+                            <span id="status-trust-delta" class="pred-delta">±0</span>
                         </div>
                     </div>
                     <div class="status-item complaint-item">
@@ -64,6 +82,7 @@
                         <div class="status-info">
                             <span class="label">不満度</span>
                             <span id="status-complaint" class="value">25</span>
+                            <span id="status-complaint-delta" class="pred-delta">±0</span>
                         </div>
                     </div>
                     <div class="status-item military-item">
@@ -71,6 +90,15 @@
                         <div class="status-info">
                             <span class="label">軍事力</span>
                             <span id="status-military" class="value">20</span>
+                            <span id="status-military-delta" class="pred-delta">±0</span>
+                        </div>
+                    </div>
+
+                    <div class="status-item">
+                        <span class="status-icon">🕵️</span>
+                        <div class="status-info">
+                            <span class="label">脱税確率</span>
+                            <span id="status-audit-prob" class="value">0%</span>
                         </div>
                     </div>
 
@@ -92,6 +120,10 @@
                     <div id="disaster-box" class="info-box disaster-report-box">
                         <h4>【今期の災害・戦況報告】</h4>
                         <p id="disaster-text">今期はまだ何も起きていません。</p>
+                    </div>
+                    <div id="audit-result-box" class="info-box audit-result-box hidden">
+                        <h4>【脱税調査結果】</h4>
+                        <p id="audit-result-text">直近の脱税調査結果は次のターンに表示されます。</p>
                     </div>
                     <div class="info-box omen-box">
                         <h4>【預言者の発言】</h4>
@@ -152,8 +184,31 @@
                                     <div class="card-desc">国庫 -15 / 軍事力 +10</div>
                                 </div>
                             </div>
+                            <div class="policy-card hidden" id="card-caravan" data-policy="caravan">
+                                <span class="card-icon">🐪</span>
+                                <div>
+                                    <div class="card-title">キャラバン</div>
+                                    <div class="card-desc">国庫 -20 / 不満度 -20</div>
+                                </div>
+                            </div>
+                            <div class="policy-card hidden" id="card-temptax" data-policy="tempTax">
+                                <span class="card-icon">💸</span>
+                                <div>
+                                    <div class="card-title">臨時税</div>
+                                    <div class="card-desc">国庫 +20 / 不満度 ±0 / 信頼度 -15</div>
+                                </div>
+                            </div>
+                            <div class="policy-card hidden" id="card-audit" data-policy="audit">
+                                <span class="card-icon">🔎</span>
+                                <div>
+                                    <div class="card-title">脱税調査</div>
+                                    <div class="card-desc">脱税者発見→国庫+15 / 発見なし→信頼-20 不満+15</div>
+                                </div>
+                            </div>
                         </div>
                     </div>
+
+                    
 
                     <div class="action-section">
                         <button id="next-turn-btn" class="classic-btn action-btn">次の季節へ ➔</button>
@@ -181,6 +236,12 @@
             </div>
         </div>
     </div>
-    <script src="data.js"></script>
+    <script src="config.js"></script>
+    <script src="state.js"></script>
+    <script src="audio.js"></script>
+    <script src="gameLogic.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
 </body>
 </html>
