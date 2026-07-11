@@ -7,7 +7,6 @@ let gameState = {
     complaint: 25, 
     military: 20, 
     towerHp: 75,
-    pendingAuditResult: null,
     selectedPolicy: 'repair',
     taxConsumption: 10, 
     taxIncome: 25,      
@@ -87,7 +86,6 @@ const statusGoldDelta = document.getElementById('status-gold-delta');
 const statusTrustDelta = document.getElementById('status-trust-delta');
 const statusComplaintDelta = document.getElementById('status-complaint-delta');
 const statusMilitaryDelta = document.getElementById('status-military-delta');
-const statusAuditProb = document.getElementById('status-audit-prob');
 
 const towerImg = document.getElementById('tower-img');
 const towerHpFill = document.getElementById('tower-hp-fill');
@@ -95,8 +93,6 @@ const towerHpNum = document.getElementById('tower-hp-num');
 const flavorText = document.getElementById('flavor-text');
 
 const disasterText = document.getElementById('disaster-text');
-const auditResultBox = document.getElementById('audit-result-box');
-const auditResultText = document.getElementById('audit-result-text');
 const omenText = document.getElementById('omen-text');
 const voiceText = document.getElementById('voice-text');
 
@@ -121,7 +117,6 @@ const cardEducation = document.getElementById('card-education');
 const cardTrain = document.getElementById('card-train');
 const cardCaravan = document.getElementById('card-caravan');
 const cardTempTax = document.getElementById('card-temptax');
-const cardAudit = document.getElementById('card-audit');
 const policyCards = document.querySelectorAll('.policy-card');
 const difficultyRadios = document.querySelectorAll('input[name="difficulty"]');
 const difficultyHint = document.getElementById('difficulty-hint');
@@ -303,12 +298,7 @@ function updateUI() {
     // 更新：ターンメーター表示を更新
     updateTurnMeterUI();
 
-    // 脱税確率の表示更新
-    if (statusAuditProb) {
-        const p = computeEvaderProbability();
-        statusAuditProb.textContent = `${Math.round(p * 100)}%`;
-    }
-    updateAuditResultDisplay();
+
 }
 
 function updateTurnMeterUI() {
@@ -329,29 +319,14 @@ function updateTurnMeterUI() {
     });
 }
 
-function updateAuditResultDisplay() {
-    if (!auditResultBox || !auditResultText) return;
-    if (gameState.pendingAuditResult) {
-        auditResultText.textContent = gameState.pendingAuditResult;
-        auditResultBox.classList.remove('hidden');
-    } else {
-        auditResultBox.classList.add('hidden');
-        auditResultText.textContent = '';
-    }
-}
-
 function refreshSpecialPolicyAvailability() {
     const showCaravan = Math.random() < specialPolicyChance;
     const showTempTax = Math.random() < (1/7); // ~1/7 chance
-    const showAudit = Math.random() < 0.2; // 1/5 chance
     if (cardCaravan) {
         cardCaravan.classList.toggle('hidden', !showCaravan);
     }
     if (cardTempTax) {
         cardTempTax.classList.toggle('hidden', !showTempTax);
-    }
-    if (cardAudit) {
-        cardAudit.classList.toggle('hidden', !showAudit);
     }
     if (!showCaravan && gameState.selectedPolicy === 'caravan') {
         gameState.selectedPolicy = 'repair';
@@ -359,11 +334,6 @@ function refreshSpecialPolicyAvailability() {
         cardRepair.classList.add('active');
     }
     if (!showTempTax && gameState.selectedPolicy === 'tempTax') {
-        gameState.selectedPolicy = 'repair';
-        policyCards.forEach(c => c.classList.remove('active'));
-        cardRepair.classList.add('active');
-    }
-    if (!showAudit && gameState.selectedPolicy === 'audit') {
         gameState.selectedPolicy = 'repair';
         policyCards.forEach(c => c.classList.remove('active'));
         cardRepair.classList.add('active');
@@ -398,16 +368,6 @@ function computePredictedDeltas() {
     else if (gameState.selectedPolicy === 'train') { policyCost = 12; policyMilitary = 10; }
     else if (gameState.selectedPolicy === 'caravan') { policyCost = 20; policyComplaint = -20; }
     else if (gameState.selectedPolicy === 'tempTax') { policyCost = -20; policyTrust = -15; policyComplaint = 10; }
-    else if (gameState.selectedPolicy === 'audit') {
-        // predicted values based on probability of finding evaders
-        const p = computeEvaderProbability();
-        // audit costs 10 gold upfront
-        policyCost = 10;
-        // expected gold +15 * p, expected trust change = -20 * (1-p), complaint = +15 * (1-p)
-        var auditExpectedGold = Math.round(15 * p);
-        var auditExpectedTrust = Math.round(-20 * (1 - p));
-        var auditExpectedComplaint = Math.round(15 * (1 - p));
-    }
 
     const predictedGold = totalTaxGold - policyCost;
 
@@ -444,20 +404,6 @@ function computePredictedDeltas() {
     };
 }
 
-function computeEvaderProbability() {
-    let p = 0.02;
-    p += Math.max(0, gameState.taxIncome - 20) * 0.015;
-    p += Math.max(0, gameState.taxResident - 10) * 0.01;
-    p += Math.max(0, gameState.taxConsumption - 12) * 0.005;
-    if (gameState.trust < 40) p += 0.06;
-    if (gameState.trust > 70) p -= 0.02;
-    p = Math.max(0.02, Math.min(0.8, p));
-    return p;
-}
-
-
-
-
 function setDeltaDisplay(el, value) {
     if (!el) return;
     if (value > 0) {
@@ -473,9 +419,6 @@ function setDeltaDisplay(el, value) {
 }
 
 function processTurn() {
-    if (gameState.pendingAuditResult) {
-        gameState.pendingAuditResult = null;
-    }
     let logMessage = `【第${gameState.currentTurn}期】`;
     const seasons = ['春', '夏', '秋', '冬'];
     const currentSeason = seasons[(gameState.currentTurn - 1) % 4];
@@ -540,21 +483,6 @@ function processTurn() {
         gameState.trust = Math.max(0, gameState.trust - 15);
         gameState.complaint = Math.min(100, gameState.complaint + 10);
         logMessage += ` 政策「臨時税」により国庫金+20。信頼度-15。不満度+10。`;
-    } else if (gameState.selectedPolicy === 'audit') {
-        gameState.gold -= 10;
-        const p = computeEvaderProbability();
-        const auditChance = Math.round(p * 100);
-        const auditSuccess = Math.random() < p;
-        if (auditSuccess) {
-            gameState.gold += 15;
-            logMessage += ` 🔎脱税調査に10ゴールドを支払い、調査で不正が発見され国庫金+15。`;
-            gameState.pendingAuditResult = `🔎 脱税調査の結果: 不正が発見されました！国庫金+15。 (この期の脱税確率: ${auditChance}%)`;
-        } else {
-            gameState.trust = Math.max(0, gameState.trust - 20);
-            gameState.complaint = Math.min(100, gameState.complaint + 15);
-            logMessage += ` ❌脱税調査に10ゴールドを支払ったが不正は見つからず、冤罪騒ぎで信頼度-20・不満度+15。`;
-            gameState.pendingAuditResult = `🔍 脱税調査の結果: 脱税は見つかりませんでした。冤罪騒ぎにより信頼度-20・不満度+15。 (この期の脱税確率: ${auditChance}%)`;
-        }
     } else if (gameState.selectedPolicy === 'caravan') {
         gameState.gold -= 20;
         gameState.complaint = Math.max(0, gameState.complaint - 20);
@@ -760,7 +688,7 @@ function processTurn() {
 
     gameState.currentTurn++;
     if (gameState.currentTurn > gameState.maxTurns) {
-        endGame(true, "無事、任期を全うしました！敵国の侵攻や天災を退けた名君として歴史に刻まれるでしょう。");
+        endGame(true);
     } else {
         refreshSpecialPolicyAvailability();
         updateUI();
@@ -768,14 +696,40 @@ function processTurn() {
     }
 }
 
+function getVictoryEnding() {
+    if (gameState.towerHp >= 80) {
+        return {
+            title: '🏆 保護勝利！ 時計塔を守り抜いた',
+            message: '🌟 時計塔は揺るがず、国の未来を守り抜きました。民は新たな時代を信じています。'
+        };
+    }
+    if (gameState.gold >= 110) {
+        return {
+            title: '🏆 財政勝利！ 国庫を豊かにした',
+            message: '🌟 国庫は潤い、次の時代に備える余裕が生まれました。'
+        };
+    }
+    if (gameState.trust >= 80) {
+        return {
+            title: '🏆 信頼勝利！ 民の信頼を勝ち取った',
+            message: '🌟 国民の信頼を失わず、名君として語り継がれる統治を成し遂げました。'
+        };
+    }
+    return {
+        title: '🏆 通常勝利！ 任期を全うした',
+        message: '🌟 さまざまな試練を乗り越え、平穏な任期を終えることができました。'
+    };
+}
+
 function endGame(isSuccess, reason) {
     mainScreen.classList.add('hidden');
     resultScreen.classList.remove('hidden');
 
     if (isSuccess) {
-        resultBadge.textContent = "🏆 統治成功！ ゲームクリア";
-        resultBadge.style.background = "#2e8253";
-        evaluationText.innerHTML = `🌟 素晴らしい手腕です！<br>あなたは見事にインフレを維持し、強固な防衛体制を築いて国を守り抜きました。<br>勝因: ${reason}`;
+        const victory = getVictoryEnding();
+        resultBadge.textContent = victory.title;
+        resultBadge.style.background = '#2e8253';
+        evaluationText.innerHTML = `${victory.message}<br>勝因: ${reason || '任期を無事に全うしました。'} `;
     } else {
         resultBadge.textContent = "💀 統治失敗！ ゲームオーバー";
         resultBadge.style.background = "#b52b2b";
@@ -802,7 +756,6 @@ function resetGame() {
         complaint: 25, 
         military: 20, 
         towerHp: 75,
-        pendingAuditResult: null,
         selectedPolicy: 'repair',
         taxConsumption: 10,
         taxIncome: 25,

@@ -9,6 +9,8 @@ class GameAudioManager {
         this.masterGain = null;
         this.isPlaying = false;
         this.sequenceTimer = null;
+        this.bgmEnabled = true;
+        this.sfxEnabled = true;
         
         // メンデルスゾーン風の疾走感と流麗さを出すためのテンポ設定 (BPM)
         this.bpm = 108; 
@@ -67,6 +69,7 @@ class GameAudioManager {
      * 🖱️ 1. クリック音
      */
     playClick() {
+        if (!this.sfxEnabled) return;
         this.init();
         if (this.ctx.state === 'suspended') this.ctx.resume();
 
@@ -92,6 +95,7 @@ class GameAudioManager {
      * ⚠️ 2. 災害発生音
      */
     playDisaster() {
+        if (!this.sfxEnabled) return;
         this.init();
         if (this.ctx.state === 'suspended') this.ctx.resume();
 
@@ -122,6 +126,7 @@ class GameAudioManager {
      * 🏆 3. 統治成功音（華やかなファンファーレ）
      */
     playSuccess() {
+        if (!this.sfxEnabled) return;
         this.init();
         if (this.ctx.state === 'suspended') this.ctx.resume();
 
@@ -152,6 +157,7 @@ class GameAudioManager {
      * 💀 4. 滅亡音（ゲームオーバー）
      */
     playGameOver() {
+        if (!this.sfxEnabled) return;
         this.init();
         if (this.ctx.state === 'suspended') this.ctx.resume();
 
@@ -297,6 +303,7 @@ class GameAudioManager {
      * BGMの再生開始
      */
     startBGM() {
+        if (!this.bgmEnabled) return;
         this.init();
         if (this.isPlaying) return;
         
@@ -316,5 +323,16 @@ class GameAudioManager {
         if (!this.isPlaying) return;
         this.isPlaying = false;
         clearTimeout(this.sequenceTimer);
+    }
+
+    setBgmEnabled(enabled) {
+        this.bgmEnabled = !!enabled;
+        if (!this.bgmEnabled) {
+            this.stopBGM();
+        }
+    }
+
+    setSfxEnabled(enabled) {
+        this.sfxEnabled = !!enabled;
     }
 }

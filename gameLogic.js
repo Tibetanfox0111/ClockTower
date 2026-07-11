@@ -1,8 +1,5 @@
 // gameLogic.js - ターン進行やイベント処理のロジック
 function processTurn() {
-    if (gameState.pendingAuditResult) {
-        gameState.pendingAuditResult = null;
-    }
     let logMessage = `【第${gameState.currentTurn}期】`;
     const seasons = ['春', '夏', '秋', '冬'];
     const currentSeason = seasons[(gameState.currentTurn - 1) % 4];
@@ -21,7 +18,6 @@ function processTurn() {
     let totalComplaintChange = Math.round(diffConsumption * consumptionComplaintRate
         + diffIncome * incomeComplaintRate
         + diffResident * complaintPerTaxPoint);
-    totalComplaintChange = Math.max(-10, Math.min(10, totalComplaintChange));
     gameState.complaint += totalComplaintChange;
     
     if (totalComplaintChange > 0) {
@@ -30,12 +26,7 @@ function processTurn() {
         logMessage += ` 税率の引き下げにより不満度${totalComplaintChange}。`;
     }
 
-    let trustChange = 0;
-    if (gameState.taxIncome > 25) {
-        trustChange -= Math.floor((gameState.taxIncome - 25) / 5) + 1;
-    } else if (gameState.taxIncome < 25) {
-        trustChange += Math.floor((25 - gameState.taxIncome) / 5) + 1;
-    }
+    let trustChange = computeIncomeTaxTrustChange(gameState.taxIncome);
     gameState.trust += trustChange;
     if (trustChange > 0) {
         logMessage += ` 低い所得税が評価され、信頼度+${trustChange}。`;
@@ -53,12 +44,12 @@ function processTurn() {
         logMessage += ` 政策「時計塔修復」により、塔HP+20。`;
     } else if (gameState.selectedPolicy === 'defense') {
         gameState.gold -= 8;
-        gameState.complaint = Math.max(0, gameState.complaint - 5);
+        gameState.complaint -= 5;
         logMessage += ` 政策「防災備蓄」を行い、災害への備えを固めた。`;
     } else if (gameState.selectedPolicy === 'education') {
         gameState.gold -= 10;
         gameState.trust += 10;
-        gameState.complaint = Math.max(0, gameState.complaint - 10);
+        gameState.complaint -= 10;
         logMessage += ` 政策「教育投資」により、人々の信頼+10。`;
     } else if (gameState.selectedPolicy === 'train') { 
         gameState.gold -= 12;
@@ -66,28 +57,14 @@ function processTurn() {
         logMessage += ` 政策「軍事訓練」を実施。軍事力+10。`;
     } else if (gameState.selectedPolicy === 'tempTax') {
         gameState.gold += 20;
-        gameState.trust = Math.max(0, gameState.trust - 15);
-        gameState.complaint = Math.min(100, gameState.complaint + 10);
-        logMessage += ` 政策「臨時税」により国庫金+20。信頼度-15。不満度+10。`;
-    } else if (gameState.selectedPolicy === 'audit') {
-        gameState.gold -= 10;
-        const p = computeEvaderProbability();
-        const auditChance = Math.round(p * 100);
-        const auditSuccess = Math.random() < p;
-        if (auditSuccess) {
-            gameState.gold += 15;
-            logMessage += ` 🔎脱税調査に10ゴールドを支払い、調査で不正が発見され国庫金+15。`;
-            gameState.pendingAuditResult = `🔎 脱税調査の結果: 不正が発見されました！国庫金+15。 (${auditChance}%)`;
-        } else {
-            gameState.trust = Math.max(0, gameState.trust - 20);
-            gameState.complaint = Math.min(100, gameState.complaint + 15);
-            logMessage += ` ❌脱税調査に10ゴールドを支払ったが不正は見つからず、冤罪騒ぎで信頼度-20・不満度+15。`;
-            gameState.pendingAuditResult = `🔍 脱税調査の結果: 脱税は見つかりませんでした。 (${auditChance}%)`;
-        }
+        gameState.trust -= 10;
+        gameState.complaint += 15;
+        logMessage += ` 政策「臨時税」により国庫金+20。信頼度-10。不満度+15。`;
     } else if (gameState.selectedPolicy === 'caravan') {
         gameState.gold -= 20;
-        gameState.complaint = Math.max(0, gameState.complaint - 20);
-        logMessage += ` 政策「キャラバン」による支援物資で、国庫金-20。不満度-20。`;
+        gameState.trust += 5;
+        gameState.complaint -= 15;
+        logMessage += ` 政策「キャラバン」による支援物資で、国庫金-20。信頼度+5。不満度-15。`;
     }
 
     if (gameState.towerHp < 50) {
@@ -95,18 +72,20 @@ function processTurn() {
         logMessage += ` 🏚️時計塔の荒廃が目立ち、民の信頼度-5。`;
     }
 
-    gameState.complaint = Math.max(0, Math.min(100, gameState.complaint));
-    gameState.trust = Math.max(0, Math.min(100, gameState.trust));
-
     let turnEventSummary = "";
     const isDefenseActive = (gameState.selectedPolicy === 'defense');
+
+    const difficultyKey = gameState.difficulty || 'normal';
+    const disasterChance = difficultyRates[difficultyKey] ?? difficultyRates.normal;
+    const damageMultiplier = difficultyKey === 'easy' ? 0.7 : difficultyKey === 'hard' ? 1.15 : 1.0;
+    const cataclysmChance = difficultyKey === 'easy' ? 0.10 : difficultyKey === 'hard' ? 0.25 : 0.18;
 
     // 災厄発生判定
     if (isDefenseActive && currentOmenTag === 'cataclysm') {
         turnEventSummary += `✨【神の加護】天変地異の危機がこの国を襲いましたが、「防災備蓄」により無効化されました！ `;
         logMessage += ` ✨政策「防災備蓄」により天変地異を完全防御。`;
     } else if (currentOmenTag === 'cataclysm') {
-        if (Math.random() < 0.5) {
+        if (Math.random() < cataclysmChance) {
             gameState.towerHp = 0;
             logMessage += ` 🌎天変地異が発生！時計塔が消滅。`;
             gameState.history.push(logMessage);
@@ -121,8 +100,10 @@ function processTurn() {
             { tag: 'earthquake', name: "地震", damage: 20, text: "⚠️災厄「大地震」の揺れ" },
             { tag: 'lightning', name: "落雷", damage: 15, text: "⚠️災厄「激しい落雷」が直撃" }
         ];
-        if (currentSeason === "冬") {
+        if (currentSeason === "夏") {
             availableDisasters.push({ tag: 'cold', name: "冷害", damage: 20, text: "⚠️災厄「記録的な冷害」" });
+        }
+        if (currentSeason === "冬") {
             availableDisasters.push({ tag: 'avalanche', name: "雪崩", damage: 25, text: "⚠️災厄「大雪崩」" });
         }
         if (gameState.gold < 60) {
@@ -130,10 +111,49 @@ function processTurn() {
         }
 
         const chosen = availableDisasters.find(d => d.tag === currentOmenTag);
-        if (chosen && !isDefenseActive && Math.random() < (1/3)) {
-            gameState.towerHp -= chosen.damage;
-            turnEventSummary += `${chosen.text} (-HP${chosen.damage}) `;
+        if (chosen && !isDefenseActive && Math.random() < disasterChance) {
+            const actualDamage = Math.max(1, Math.round(chosen.damage * damageMultiplier));
+            gameState.towerHp -= actualDamage;
+            turnEventSummary += `${chosen.text} (-HP${actualDamage}) `;
             logMessage += ` ⚠️災害発生（${chosen.name}）。`;
+        }
+    }
+
+    // 市民蜂起判定（信頼度0で即発生）
+    let revolutionTriggered = false;
+    let revolutionReason = "";
+    if (gameState.trust <= 0) {
+        revolutionTriggered = true;
+        revolutionReason = "信頼度が0に落ち、市民が蜂起しました！";
+    } else if (gameState.complaint >= 100) {
+        revolutionTriggered = true;
+        revolutionReason = "限界に達した民衆の怒りが爆発し、市民革命が発生しました！";
+    } else if (gameState.complaint > 50) {
+        const revolutionChance = (gameState.complaint - 50) / 50;
+        if (Math.random() < revolutionChance) {
+            revolutionTriggered = true;
+            revolutionReason = `不満度が抑えきれず、市民革命が勃発しました！`;
+        }
+    }
+
+    if (revolutionTriggered) {
+        const rebelPower = Math.max(20, gameState.complaint * 2 + (gameState.trust <= 0 ? 15 : 0));
+        const governmentPower = gameState.military + Math.max(0, gameState.trust);
+        gameState.towerHp -= 10;
+
+        if (governmentPower >= rebelPower) {
+            const militaryLoss = Math.min(gameState.military, rebelPower);
+            gameState.military = Math.max(0, gameState.military - militaryLoss);
+            gameState.complaint = 20;
+            gameState.trust = Math.max(0, gameState.trust);
+            const suppressionMsg = `💥【市民蜂起】${revolutionReason}<br>⚔️政府軍により鎮圧成功。時計塔HP -10。`;
+            combinedDisasterText = combinedDisasterText ? combinedDisasterText + "<br><br>" + suppressionMsg : suppressionMsg;
+            logMessage += ` ⚔️市民蜂起を鎮圧（塔HP-10）。`;
+        } else {
+            logMessage += ` ❌市民蜂起の制裁に失敗、政権打倒。`;
+            gameState.history.push(logMessage);
+            endGame(false, `市民蜂起により現政権は打倒されました。`);
+            return;
         }
     }
 
@@ -173,41 +193,6 @@ function processTurn() {
     let combinedDisasterText = "";
     if (turnEventSummary) combinedDisasterText += turnEventSummary + "<br>";
     if (invasionOccurred) combinedDisasterText += invasionDetails.join("<br>");
-
-    // 市民革命（暴動）判定
-    let revolutionTriggered = false;
-    let revolutionReason = "";
-    if (gameState.complaint >= 100) {
-        revolutionTriggered = true;
-        revolutionReason = "限界に達した民衆の怒りが爆発し、市民革命が発生しました！";
-    } else if (gameState.complaint > 50) {
-        const revolutionChance = (gameState.complaint - 50) / 50;
-        if (Math.random() < revolutionChance) {
-            revolutionTriggered = true;
-            revolutionReason = `不満度が抑えきれず、市民革命が勃発しました！`;
-        }
-    }
-
-    if (revolutionTriggered) {
-        const rebelPower = gameState.complaint * 2;
-        const governmentPower = gameState.military + gameState.trust;
-        gameState.towerHp -= 10;
-
-        if (governmentPower >= rebelPower) {
-            const militaryLoss = Math.min(gameState.military, rebelPower);
-            gameState.military = Math.max(0, gameState.military - militaryLoss);
-            gameState.complaint = 20;
-            gameState.trust = Math.max(0, Math.min(100, gameState.trust - 15));
-            const suppressionMsg = `💥【市民革命勃発】${revolutionReason}<br>⚔️政府軍により鎮圧成功。時計塔HP -10。`;
-            combinedDisasterText = combinedDisasterText ? combinedDisasterText + "<br><br>" + suppressionMsg : suppressionMsg;
-            logMessage += ` ⚔️市民革命を鎮圧（塔HP-10）。`;
-        } else {
-            logMessage += ` ❌市民革命の制裁に失敗、政権打倒。`;
-            gameState.history.push(logMessage);
-            endGame(false, `市民革命により現政権は打倒されました。`);
-            return;
-        }
-    }
 
     // 画面側への結果受け渡し用グローバルコールバック（app.js側で上書きする）
     onTurnProcessed(combinedDisasterText, logMessage);
