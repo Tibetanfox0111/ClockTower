@@ -18,6 +18,7 @@ const resultScreen = document.getElementById('result-screen');
 const maxYearsRange = document.getElementById('max-years-range');
 const maxYearsVal = document.getElementById('max-years-val');
 const startBtn = document.getElementById('start-btn');
+const fullscreenBtn = document.getElementById('fullscreen-btn');
 const turnBadge = document.getElementById('turn-badge');
 
 // ステータス（現在値）の表示要素
@@ -66,6 +67,65 @@ const optionDifficulty = document.getElementById('option-difficulty');
 const optionQuitBtn = document.getElementById('option-quit-btn');
 const meterDot = document.getElementById('meter-dot');
 const meterLabel = document.getElementById('meter-label');
+
+function isFullscreenActive() {
+    return Boolean(
+        document.fullscreenElement
+        || document.webkitFullscreenElement
+        || document.mozFullScreenElement
+        || document.msFullscreenElement
+        || document.body.classList.contains('fullscreen-fallback')
+    );
+}
+
+function updateFullscreenButtonLabel() {
+    if (!fullscreenBtn) return;
+    fullscreenBtn.textContent = isFullscreenActive() ? '全画面解除' : '全画面表示';
+}
+
+async function enterFullscreen() {
+    const target = document.documentElement || document.body;
+
+    if (isFullscreenActive()) return true;
+
+    const requestFullscreen = target.requestFullscreen
+        || target.webkitRequestFullscreen
+        || target.mozRequestFullScreen
+        || target.msRequestFullscreen;
+
+    if (requestFullscreen) {
+        try {
+            await requestFullscreen.call(target);
+            document.body.classList.remove('fullscreen-fallback');
+            updateFullscreenButtonLabel();
+            return true;
+        } catch (error) {
+            // Fall back to the CSS-based fullscreen mode below.
+        }
+    }
+
+    document.body.classList.add('fullscreen-fallback');
+    updateFullscreenButtonLabel();
+    return true;
+}
+
+async function exitFullscreen() {
+    const exitFn = document.exitFullscreen
+        || document.webkitExitFullscreen
+        || document.mozCancelFullScreen
+        || document.msExitFullscreen;
+
+    if (exitFn) {
+        try {
+            await exitFn.call(document);
+        } catch (error) {
+            // Ignore and clear the fallback state below.
+        }
+    }
+
+    document.body.classList.remove('fullscreen-fallback');
+    updateFullscreenButtonLabel();
+}
 
 // --- イベントリスナーの設定 ---
 
@@ -165,6 +225,28 @@ startBtn.addEventListener('click', () => {
     }
     startGame();
 });
+
+if (fullscreenBtn) {
+    fullscreenBtn.addEventListener('click', () => {
+        if (isFullscreenActive()) {
+            exitFullscreen();
+        } else {
+            enterFullscreen();
+        }
+    });
+
+    const fullscreenEvents = ['fullscreenchange', 'webkitfullscreenchange', 'mozfullscreenchange', 'MSFullscreenChange'];
+    fullscreenEvents.forEach((eventName) => {
+        document.addEventListener(eventName, () => {
+            updateFullscreenButtonLabel();
+        });
+    });
+
+    window.addEventListener('resize', () => {
+        updateFullscreenButtonLabel();
+    });
+    updateFullscreenButtonLabel();
+}
 
 // 次の季節へ進行ボタン
 nextTurnBtn.addEventListener('click', () => {
