@@ -39,37 +39,37 @@ function processTurn() {
 
     // 政策の実行処理
     if (gameState.selectedPolicy === 'repair') {
-        gameState.gold -= 12;
-        gameState.towerHp = Math.min(100, gameState.towerHp + 20);
-        logMessage += ` 政策「時計塔修復」により、塔HP+20。`;
+        gameState.gold -= 10;
+        gameState.towerHp = Math.min(100, gameState.towerHp + 18);
+        logMessage += ` 政策「時計塔修復」により、塔HP+18。`;
     } else if (gameState.selectedPolicy === 'defense') {
-        gameState.gold -= 8;
+        gameState.gold -= 7;
         gameState.complaint -= 5;
         logMessage += ` 政策「防災備蓄」を行い、災害への備えを固めた。`;
     } else if (gameState.selectedPolicy === 'education') {
-        gameState.gold -= 10;
-        gameState.trust += 10;
-        gameState.complaint -= 10;
-        logMessage += ` 政策「教育投資」により、人々の信頼+10。`;
+        gameState.gold -= 8;
+        gameState.trust += 8;
+        gameState.complaint -= 8;
+        logMessage += ` 政策「教育投資」により、人々の信頼+8。`;
     } else if (gameState.selectedPolicy === 'train') { 
-        gameState.gold -= 12;
+        gameState.gold -= 10;
         gameState.military += 10;
         logMessage += ` 政策「軍事訓練」を実施。軍事力+10。`;
     } else if (gameState.selectedPolicy === 'tempTax') {
-        gameState.gold += 20;
-        gameState.trust -= 10;
-        gameState.complaint += 15;
-        logMessage += ` 政策「臨時税」により国庫金+20。信頼度-10。不満度+15。`;
+        gameState.gold += 15;
+        gameState.trust -= 8;
+        gameState.complaint += 12;
+        logMessage += ` 政策「臨時税」により国庫金+15。信頼度-8。不満度+12。`;
     } else if (gameState.selectedPolicy === 'caravan') {
-        gameState.gold -= 20;
+        gameState.gold -= 18;
         gameState.trust += 5;
-        gameState.complaint -= 15;
-        logMessage += ` 政策「キャラバン」による支援物資で、国庫金-20。信頼度+5。不満度-15。`;
+        gameState.complaint -= 12;
+        logMessage += ` 政策「キャラバン」による支援物資で、国庫金-18。信頼度+5。不満度-12。`;
     }
 
     if (gameState.towerHp < 50) {
-        gameState.trust -= 5;
-        logMessage += ` 🏚️時計塔の荒廃が目立ち、民の信頼度-5。`;
+        gameState.trust -= 3;
+        logMessage += ` 🏚️時計塔の荒廃が目立ち、民の信頼度-3。`;
     }
 
     let turnEventSummary = "";
@@ -77,8 +77,8 @@ function processTurn() {
 
     const difficultyKey = gameState.difficulty || 'normal';
     const disasterChance = difficultyRates[difficultyKey] ?? difficultyRates.normal;
-    const damageMultiplier = difficultyKey === 'easy' ? 0.7 : difficultyKey === 'hard' ? 1.15 : 1.0;
-    const cataclysmChance = difficultyKey === 'easy' ? 0.10 : difficultyKey === 'hard' ? 0.25 : 0.18;
+    const damageMultiplier = difficultyKey === 'easy' ? 0.8 : difficultyKey === 'hard' ? 1.1 : 1.0;
+    const cataclysmChance = difficultyKey === 'easy' ? 0.06 : difficultyKey === 'hard' ? 0.18 : 0.12;
 
     // 災厄発生判定
     if (isDefenseActive && currentOmenTag === 'cataclysm') {

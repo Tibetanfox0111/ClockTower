@@ -146,24 +146,71 @@ nextTurnBtn.addEventListener('click', onNextTurnClick);
 restartBtn.addEventListener('click', resetGame);
 
 // Fullscreen toggle
-if (fullscreenBtn) {
-    fullscreenBtn.addEventListener('click', () => {
-        const el = document.documentElement;
-        if (!document.fullscreenElement) {
-            if (el.requestFullscreen) el.requestFullscreen();
-            else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen();
-            else if (el.msRequestFullscreen) el.msRequestFullscreen();
-        } else {
-            if (document.exitFullscreen) document.exitFullscreen();
-            else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
-            else if (document.msExitFullscreen) document.msExitFullscreen();
+function updateFullscreenButtonLabel() {
+    if (!fullscreenBtn) return;
+    const isFullscreen = document.fullscreenElement
+        || document.webkitFullscreenElement
+        || document.mozFullScreenElement
+        || document.msFullscreenElement
+        || document.body.classList.contains('fullscreen-fallback');
+    fullscreenBtn.textContent = isFullscreen ? '全画面解除' : '全画面表示';
+}
+
+async function toggleFullscreen() {
+    const target = document.documentElement || document.body;
+    const isFullscreen = document.fullscreenElement
+        || document.webkitFullscreenElement
+        || document.mozFullScreenElement
+        || document.msFullscreenElement;
+
+    if (!isFullscreen) {
+        const requestFullscreen = target.requestFullscreen
+            || target.webkitRequestFullscreen
+            || target.mozRequestFullScreen
+            || target.msRequestFullscreen;
+        if (requestFullscreen) {
+            try {
+                await requestFullscreen.call(target);
+                document.body.classList.remove('fullscreen-fallback');
+                updateFullscreenButtonLabel();
+                return;
+            } catch (error) {
+                // Fall through to the CSS-based fullscreen fallback.
+            }
         }
+        document.body.classList.add('fullscreen-fallback');
+    } else {
+        const exitFullscreen = document.exitFullscreen
+            || document.webkitExitFullscreen
+            || document.mozCancelFullScreen
+            || document.msExitFullscreen;
+        if (exitFullscreen) {
+            try {
+                await exitFullscreen.call(document);
+            } catch (error) {
+                // Ignore and continue removing the fallback state.
+            }
+        }
+        document.body.classList.remove('fullscreen-fallback');
+    }
+
+    updateFullscreenButtonLabel();
+}
+
+if (fullscreenBtn) {
+    fullscreenBtn.addEventListener('click', (event) => {
+        event.preventDefault();
+        toggleFullscreen();
     });
 
-    document.addEventListener('fullscreenchange', () => {
-        if (!fullscreenBtn) return;
-        fullscreenBtn.textContent = document.fullscreenElement ? '全画面解除' : '全画面表示';
+    const fullscreenEvents = ['fullscreenchange', 'webkitfullscreenchange', 'mozfullscreenchange', 'MSFullscreenChange'];
+    fullscreenEvents.forEach((eventName) => {
+        document.addEventListener(eventName, updateFullscreenButtonLabel);
     });
+
+    window.addEventListener('resize', updateFullscreenButtonLabel);
+
+    updateFullscreenButtonLabel();
 }
 
 function onNextTurnClick() {

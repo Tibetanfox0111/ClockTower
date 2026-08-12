@@ -5,18 +5,24 @@ body {
     font-family: 'Helvetica Neue', 'Arial', 'Hiragino Kaku Gothic ProN', 'Meiryo', sans-serif;
     font-weight: bold;
     margin: 0;
-    padding: 5px;
+    padding: 8px;
     display: flex;
     justify-content: center;
     align-items: center;
-    min-height: 100vh;
+    min-height: 100dvh;
     box-sizing: border-box;
+    overflow: auto;
+}
+
+body.fullscreen-fallback {
+    padding: 0;
     overflow: hidden;
 }
 
 #game-container {
-    width: 1350px;
-    height: 96vh;
+    width: min(1350px, calc(100vw - 16px));
+    min-height: min(96dvh, 900px);
+    max-height: 96dvh;
     position: relative;
     background: #f4ebd9 url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><rect fill="%23f4ebd9" width="100" height="100"/><path d="M0 0h100v100H0z" fill="none" stroke="%23ebdcb9" stroke-width="1"/></svg>');
     border: 5px solid #8c6239;
@@ -26,6 +32,18 @@ body {
     box-sizing: border-box;
     display: flex;
     flex-direction: column;
+    overflow: auto;
+}
+
+body.fullscreen-fallback #game-container {
+    width: 100vw;
+    height: 100dvh;
+    min-height: 100dvh;
+    max-height: 100dvh;
+    border-radius: 0;
+    border-width: 0;
+    box-shadow: none;
+    padding: 12px 14px;
 }
 
 .screen {
@@ -43,19 +61,20 @@ body {
 /* タイトル画面 */
 #start-screen {
     text-align: center;
-    padding: 20px;
+    padding: clamp(12px, 2vw, 20px);
     justify-content: center;
+    overflow-y: auto;
 }
 
 h1 {
-    font-size: 3.8rem;
+    font-size: clamp(2.2rem, 4.5vw, 3.8rem);
     color: #724c25;
     margin-bottom: 0px;
     font-weight: 900;
 }
 
 .subtitle {
-    font-size: 1.4rem;
+    font-size: clamp(1rem, 2vw, 1.4rem);
     color: #9c7246;
     margin-top: 5px;
     margin-bottom: 20px;
@@ -65,15 +84,15 @@ h1 {
     max-width: 800px;
     margin: 0 auto 20px auto;
     line-height: 1.7;
-    font-size: 1.2rem;
+    font-size: clamp(0.95rem, 1.6vw, 1.2rem);
 }
 
 /* 期間設定UI枠 */
 .setup-section {
-    width: 750px;
+    width: min(100%, 750px);
     margin: 0 auto 25px auto;
     background: rgba(255, 252, 245, 0.8);
-    padding: 20px 40px;
+    padding: clamp(14px, 2vw, 20px) clamp(16px, 3vw, 40px);
     border: 2px solid #bfa380;
     border-radius: 6px;
     text-align: left;
@@ -128,13 +147,14 @@ h1 {
     gap: 12px;
     align-items: center;
     margin-top: 12px;
+    flex-wrap: wrap;
 }
 .classic-btn.secondary {
     padding: 8px 18px;
     font-size: 1.05rem;
     background: linear-gradient(180deg, #e7d6b6, #a57a4e);
     border: 2px solid #5c4328;
-    max-width: 180px;
+    max-width: 220px;
     white-space: nowrap;
     box-sizing: border-box;
 }
@@ -167,10 +187,10 @@ h1 {
 .label-long { right: 0%; }
 
 .difficulty-section {
-    width: 750px;
+    width: min(100%, 750px);
     margin: 0 auto 20px auto;
     background: rgba(255, 252, 245, 0.8);
-    padding: 18px 40px;
+    padding: clamp(14px, 2vw, 18px) clamp(16px, 3vw, 40px);
     border: 2px solid #bfa380;
     border-radius: 6px;
     text-align: left;
@@ -207,11 +227,38 @@ h1 {
     border: 3px solid #5c4328;
     color: #fff;
     padding: 10px 40px;
-    font-size: 1.3rem;
+    font-size: clamp(1.05rem, 1.8vw, 1.3rem);
     font-weight: 900;
     cursor: pointer;
     border-radius: 6px;
     box-shadow: 0 4px 6px rgba(0,0,0,0.15);
+}
+
+.classic-btn:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+    filter: grayscale(25%);
+}
+
+@media (max-width: 760px) {
+    .start-controls {
+        flex-direction: column;
+    }
+
+    #start-screen .classic-btn,
+    .classic-btn.secondary {
+        width: min(100%, 280px);
+        max-width: min(100%, 280px);
+        margin: 8px auto 0;
+    }
+
+    .difficulty-options {
+        gap: 12px;
+    }
+
+    .difficulty-options label {
+        font-size: 1rem;
+    }
 }
 
 /* メインゲーム画面レイアウト */
@@ -281,7 +328,13 @@ h1 {
 .meter-label { width: 120px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
 /* スタート画面のボタンが枠からはみ出る問題を防止 */
-#start-screen .classic-btn { max-width: 320px; display: block; margin: 12px auto 0; box-sizing: border-box; }
+#start-screen .classic-btn {
+    max-width: min(100%, 320px);
+    width: min(100%, 320px);
+    display: block;
+    margin: 12px auto 0;
+    box-sizing: border-box;
+}
 
 .game-header h2 {
     margin: 0;
@@ -433,23 +486,23 @@ h1 {
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 4px;
-    padding: 5px 0;
+    gap: 10px;
+    padding: 12px 0 6px;
     width: 100%;
 }
 
 .hp-label-top {
-    font-size: 0.95rem;
+    font-size: clamp(1.25rem, 1.1vw, 1.45rem);
     font-weight: 900;
     color: #5c4d41;
 }
 
 .gauge-bar-vertical {
-    width: 50px;
-    height: 120px; /* パネル要素増加に合わせ少しコンパクトに */
+    width: clamp(84px, 5.5vw, 102px);
+    height: clamp(200px, 22vh, 250px);
     background-color: #e6dbcb;
-    border: 3px solid #8c6239;
-    border-radius: 6px;
+    border: 4px solid #8c6239;
+    border-radius: 12px;
     position: relative;
     overflow: hidden;
     display: flex;
@@ -465,7 +518,7 @@ h1 {
 }
 
 .hp-num-bottom {
-    font-size: 1.1rem;
+    font-size: clamp(1.55rem, 1.3vw, 1.9rem);
     font-weight: 900;
     color: #1a1008;
 }

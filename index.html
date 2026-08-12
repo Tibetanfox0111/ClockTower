@@ -61,6 +61,11 @@
                 </div>
             </div>
 
+            <div class="info-box challenge-box">
+                <h4>【今期の挑戦】</h4>
+                <p id="challenge-text">挑戦条件：財政の余裕（国庫金120以上）</p>
+            </div>
+
             <div id="options-panel" class="options-panel hidden">
                 <div class="options-card">
                     <h3>オプション</h3>
@@ -168,42 +173,42 @@
                                 <span class="card-icon">🛠</span>
                                 <div>
                                     <div class="card-title">時計塔修復</div>
-                                    <div class="card-desc">国庫 -15 / 塔HP +20</div>
+                                    <div class="card-desc">国庫 -10 / 塔HP +18</div>
                                 </div>
                             </div>
                             <div class="policy-card" id="card-defense" data-policy="defense">
                                 <span class="card-icon">🛡</span>
                                 <div>
                                     <div class="card-title">防災備蓄</div>
-                                    <div class="card-desc">国庫 -10 / 災害耐性UP / 不満 -5</div>
+                                    <div class="card-desc">国庫 -7 / 災害耐性UP / 不満 -5</div>
                                 </div>
                             </div>
                             <div class="policy-card" id="card-education" data-policy="education">
                                 <span class="card-icon">📖</span>
                                 <div>
                                     <div class="card-title">教育投資</div>
-                                    <div class="card-desc">国庫 -12 / 信頼 +10 / 不満 -10</div>
+                                    <div class="card-desc">国庫 -8 / 信頼 +8 / 不満 -8</div>
                                 </div>
                             </div>
                             <div class="policy-card" id="card-train" data-policy="train">
                                 <span class="card-icon">🪖</span>
                                 <div>
                                     <div class="card-title">軍事訓練</div>
-                                    <div class="card-desc">国庫 -15 / 軍事力 +10</div>
+                                    <div class="card-desc">国庫 -10 / 軍事力 +10</div>
                                 </div>
                             </div>
                             <div class="policy-card hidden" id="card-caravan" data-policy="caravan">
                                 <span class="card-icon">🐪</span>
                                 <div>
                                     <div class="card-title">キャラバン</div>
-                                    <div class="card-desc">国庫 -20 / 不満度 -20</div>
+                                    <div class="card-desc">国庫 -18 / 信頼 +5 / 不満 -12</div>
                                 </div>
                             </div>
                             <div class="policy-card hidden" id="card-temptax" data-policy="tempTax">
                                 <span class="card-icon">💸</span>
                                 <div>
                                     <div class="card-title">臨時税</div>
-                                    <div class="card-desc">国庫 +20 / 不満度 ±0 / 信頼度 -15</div>
+                                    <div class="card-desc">国庫 +15 / 信頼 -8 / 不満 +12</div>
                                 </div>
                             </div>
 
@@ -222,6 +227,14 @@
         <div id="result-screen" class="screen hidden">
             <h2>政策シミュレーション 結果</h2>
             <div id="result-badge" class="result-badge">ゲームクリア</div>
+            <div class="info-box challenge-box">
+                <h4>【挑戦結果】</h4>
+                <p id="result-challenge-text">挑戦目標：なし</p>
+            </div>
+            <div class="info-box challenge-box">
+                <h4>【総合スコア】</h4>
+                <p id="score-text">総合スコア: 0 点 / 評価: 試行錯誤</p>
+            </div>
             
             <div class="result-layout">
                 <div class="evaluation-panel">
