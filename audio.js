@@ -28,23 +28,51 @@ class GameAudioManager {
 
         // --- 🎵 メンデルスゾーン風・ドラマチック旋律データ（32ステップ = 4拍子×4小節×2） ---
         
-        // メロディ：無言歌集を彷彿とさせる、情熱的で切ない高音のロマン派メロディ
-        this.melodyTrack = [
+        // 通常BGM：希望と不安が混じる、壮大な国政の風景
+        this.defaultMelodyTrack = [
             'E5', null, 'A5', 'B5', 'C6', null, 'B5', 'A5', 'E5', null, 'C5', 'D5', 'E5', null, null, null,
             'D5', null, 'F5', 'A5', 'D6', null, 'C6', 'B5', 'E5', null, 'G#5', 'B5', 'A5', null, null, null
         ];
-
-        // 伴奏：流れるような美しい分散和音（アルペジオ）。ピアノや弦楽合奏のうねりを表現
-        this.harpsichordTrack = [
+        this.defaultHarpsichordTrack = [
             'A3', 'E4', 'A4', 'C5', 'A3', 'E4', 'A4', 'C5', 'A3', 'E4', 'A4', 'C5', 'E3', 'B3', 'E4', 'G#4',
             'D3', 'A3', 'D4', 'F4', 'D3', 'A3', 'D4', 'F4', 'E3', 'B3', 'E4', 'G#4', 'A3', 'E4', 'A4', null
         ];
-
-        // ベース：管弦楽のコントラバスのように、全体の劇的な進行をどっしり支える低音
-        this.bassTrack = [
+        this.defaultBassTrack = [
             'A2', null, null, null, 'A2', null, null, null, 'C3', null, null, null, 'E2', null, null, null,
             'D2', null, null, null, 'F2', null, null, null, 'E2', null, null, null, 'A2', null, null, null
         ];
+
+        // エンディング用：明るく落ち着いた大団円の旋律
+        this.endingMelodyTrack = [
+            'C5', null, 'E5', 'G5', 'A5', null, 'G5', 'E5', 'D5', null, 'F5', 'A5', 'G5', null, null, null,
+            'A4', null, 'C5', 'E5', 'G5', null, 'F5', 'E5', 'D5', null, 'G5', 'F5', 'E5', null, null, null
+        ];
+        this.endingHarpsichordTrack = [
+            'C3', 'G3', 'C4', 'E4', 'C3', 'G3', 'C4', 'E4', 'D3', 'A3', 'D4', 'F4', 'E3', 'B3', 'E4', 'G#4',
+            'A3', 'E4', 'A4', 'C5', 'F3', 'C4', 'F4', 'A4', 'G3', 'D4', 'G4', 'B4', 'C4', 'G4', 'C5', null
+        ];
+        this.endingBassTrack = [
+            'C2', null, null, null, 'C2', null, null, null, 'G2', null, null, null, 'A2', null, null, null,
+            'F2', null, null, null, 'G2', null, null, null, 'C2', null, null, null, 'C2', null, null, null
+        ];
+
+        // ゲームオーバー用：重く、暗く、静かに世界の終わりを示す旋律
+        this.gameOverMelodyTrack = [
+            'A4', null, 'G4', 'F4', 'E4', null, 'D4', 'C4', 'A3', null, 'G3', 'F3', 'E3', null, null, null,
+            'D3', null, 'E3', 'G3', 'A3', null, 'G3', 'F3', 'E3', null, 'D3', 'C3', 'A2', null, null, null
+        ];
+        this.gameOverHarpsichordTrack = [
+            'A2', 'E3', 'A3', 'C4', 'G2', 'D3', 'G3', 'B3', 'F2', 'C3', 'F3', 'A3', 'E2', 'B2', 'E3', 'G3',
+            'D2', 'A2', 'D3', 'F3', 'C2', 'G2', 'C3', 'E3', 'A2', 'E3', 'A3', 'C4', 'A2', 'E3', 'A3', null
+        ];
+        this.gameOverBassTrack = [
+            'A1', null, null, null, 'G1', null, null, null, 'F1', null, null, null, 'E1', null, null, null,
+            'D1', null, null, null, 'C1', null, null, null, 'A1', null, null, null, 'A1', null, null, null
+        ];
+
+        this.melodyTrack = this.defaultMelodyTrack.slice();
+        this.harpsichordTrack = this.defaultHarpsichordTrack.slice();
+        this.bassTrack = this.defaultBassTrack.slice();
     }
 
     /**
@@ -300,17 +328,44 @@ class GameAudioManager {
     }
 
     /**
-     * BGMの再生開始
+     * BGMの再生開始（通常曲）
      */
     startBGM() {
+        this.startLoop(this.defaultMelodyTrack, this.defaultHarpsichordTrack, this.defaultBassTrack);
+    }
+
+    /**
+     * エンディングBGMの再生開始
+     */
+    startEndingBGM() {
+        this.startLoop(this.endingMelodyTrack, this.endingHarpsichordTrack, this.endingBassTrack);
+    }
+
+    /**
+     * ゲームオーバーBGMの再生開始
+     */
+    startGameOverBGM() {
+        this.startLoop(this.gameOverMelodyTrack, this.gameOverHarpsichordTrack, this.gameOverBassTrack);
+    }
+
+    /**
+     * 任意のBGMトラックをループ再生
+     */
+    startLoop(melodyTrack, harpsichordTrack, bassTrack) {
         if (!this.bgmEnabled) return;
         this.init();
-        if (this.isPlaying) return;
-        
+        if (this.isPlaying) {
+            clearTimeout(this.sequenceTimer);
+        }
+
         if (this.ctx.state === 'suspended') {
             this.ctx.resume();
         }
 
+        this.melodyTrack = melodyTrack || this.defaultMelodyTrack;
+        this.harpsichordTrack = harpsichordTrack || this.defaultHarpsichordTrack;
+        this.bassTrack = bassTrack || this.defaultBassTrack;
+        this.currentStep = 0;
         this.isPlaying = true;
         this.nextStepTime = this.ctx.currentTime + 0.05;
         this.scheduler();
@@ -323,6 +378,7 @@ class GameAudioManager {
         if (!this.isPlaying) return;
         this.isPlaying = false;
         clearTimeout(this.sequenceTimer);
+        this.sequenceTimer = null;
     }
 
     setBgmEnabled(enabled) {
@@ -335,4 +391,11 @@ class GameAudioManager {
     setSfxEnabled(enabled) {
         this.sfxEnabled = !!enabled;
     }
+}
+
+if (typeof globalThis !== 'undefined') {
+    globalThis.GameAudioManager = GameAudioManager;
+}
+if (typeof window !== 'undefined') {
+    window.GameAudioManager = GameAudioManager;
 }

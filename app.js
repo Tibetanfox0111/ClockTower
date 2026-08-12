@@ -67,6 +67,9 @@ const optionDifficulty = document.getElementById('option-difficulty');
 const optionQuitBtn = document.getElementById('option-quit-btn');
 const meterDot = document.getElementById('meter-dot');
 const meterLabel = document.getElementById('meter-label');
+const challengeText = document.getElementById('challenge-text');
+const resultChallengeText = document.getElementById('result-challenge-text');
+const scoreText = document.getElementById('score-text');
 
 function isFullscreenActive() {
     return Boolean(
@@ -307,6 +310,9 @@ taxResidentRange.addEventListener('input', (e) => {
 // --- 各種ゲーム制御関数 ---
 
 function startGame() {
+    if (!gameState.activeChallenge) {
+        gameState.activeChallenge = rollChallenge();
+    }
     startScreen.classList.add('hidden');
     mainScreen.classList.remove('hidden');
     resultScreen.classList.add('hidden');
@@ -314,6 +320,19 @@ function startGame() {
     refreshSpecialPolicyAvailability();
     updateUI();
     generatePredictions();
+    updateChallengeUI();
+}
+
+function updateChallengeUI() {
+    if (!challengeText) return;
+    const challenge = gameState.activeChallenge || rollChallenge();
+    if (!challenge) {
+        challengeText.textContent = '挑戦条件：なし';
+        return;
+    }
+
+    const result = evaluateChallenge(challenge, gameState);
+    challengeText.textContent = `${challenge.title}：${challenge.description}（現在 ${result.progress} / ${challenge.target}）`;
 }
 
 function updateUI() {
@@ -333,6 +352,7 @@ function updateUI() {
     const year = Math.ceil(gameState.currentTurn / 4);
     const seasons = ['春', '夏', '秋', '冬'];
     turnBadge.textContent = `${year}年目 ${seasons[(gameState.currentTurn - 1) % 4]} / 全${gameState.maxTurns / 4}年`;
+    updateChallengeUI();
 
     towerHpFill.style.height = `${gameState.towerHp}%`;
     towerHpNum.textContent = `${gameState.towerHp}/100`;
@@ -475,6 +495,7 @@ window.onTurnProcessed = function(combinedDisasterText, logMessage) {
         refreshSpecialPolicyAvailability();
         updateUI();
         generatePredictions();
+        updateChallengeUI();
     }
 };
 
@@ -509,26 +530,39 @@ function getVictoryEnding() {
 function endGame(isSuccess, reason) {
     mainScreen.classList.add('hidden');
     resultScreen.classList.remove('hidden');
-    
+
+    const challengeResult = evaluateChallenge(gameState.activeChallenge, gameState);
+    const finalScore = computeFinalScore(gameState);
+    const scoreGrade = getScoreGrade(finalScore.score);
+
+    if (resultChallengeText) {
+        resultChallengeText.textContent = `挑戦目標：${gameState.activeChallenge ? gameState.activeChallenge.title : 'なし'} / ${challengeResult.cleared ? '達成' : '未達成'}（${challengeResult.progress} / ${challengeResult.target}）`;
+    }
+    if (scoreText) {
+        scoreText.textContent = `総合スコア: ${finalScore.score} 点 / 評価: ${scoreGrade.label}`;
+    }
+
     const am = getAudioManager();
     if (am) {
-        am.stopBGM(); // 🎵 終了したけん一旦BGMは止めるばい
+        am.stopBGM();
         if (isSuccess) {
-            am.playSuccess(); // 🔊 🏆 ファンファーレを鳴らす！
+            am.playSuccess();
+            am.startEndingBGM();
         } else {
-            am.playGameOver(); // 🔊 💀 滅亡の下降和音を鳴らす！
+            am.playGameOver();
+            am.startGameOverBGM();
         }
     }
-    
+
     if (isSuccess) {
         const victory = getVictoryEnding();
-        resultBadge.textContent = victory.title;
+        resultBadge.textContent = `${victory.title} [${scoreGrade.label}]`;
         resultBadge.style.background = "#2e8253";
-        evaluationText.innerHTML = `${victory.message}<br>勝因: ${reason || '任期を無事に全うしました。'} `;
+        evaluationText.innerHTML = `${victory.message}<br>勝因: ${reason || '任期を無事に全うしました。'}<br>挑戦結果: ${challengeResult.cleared ? '達成しました！' : '未達成でした。次回は条件に合わせて戦略を変えましょう。'}<br>総合スコア: <strong>${finalScore.score}</strong> 点`;
     } else {
-        resultBadge.textContent = "💀 統治失敗！ ゲームオーバー";
+        resultBadge.textContent = `💀 統治失敗！ ゲームオーバー [${scoreGrade.label}]`;
         resultBadge.style.background = "#b52b2b";
-        evaluationText.innerHTML = `💔 志半ばで国家は崩壊しました…<br>原因: <strong>${reason}</strong><br>次は不満度を抑えるか、こまめに軍事訓練を行って備えましょう。`;
+        evaluationText.innerHTML = `💔 志半ばで国家は崩壊しました…<br>原因: <strong>${reason}</strong><br>挑戦結果: ${challengeResult.cleared ? '達成しましたが、国家は崩壊しました。' : '未達成でした。'}<br>総合スコア: <strong>${finalScore.score}</strong> 点<br>次は不満度を抑えるか、こまめに軍事訓練を行って備えましょう。`;
     }
 
     historyLog.innerHTML = "";
@@ -546,17 +580,18 @@ function resetGame() {
     gameState = {
         currentTurn: 1,
         maxTurns: 24,
-        gold: 90,
-        trust: 50,
-        complaint: 25, 
-        military: 20, 
-        towerHp: 75,
+        gold: 100,
+        trust: 55,
+        complaint: 20,
+        military: 25,
+        towerHp: 80,
         selectedPolicy: 'repair',
         taxConsumption: 10,
         taxIncome: 25,
         taxResident: 10,
         difficulty: 'normal',
-        history: []
+        history: [],
+        activeChallenge: rollChallenge()
     };
     
     updateDifficultySelection('normal');
